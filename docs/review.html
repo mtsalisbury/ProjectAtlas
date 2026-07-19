@@ -1,0 +1,95 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <meta name="description" content="Submit technical feedback on Project Atlas research.">
+  <title>Send a Review — Project Atlas</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+<header class="site-header">
+  <div class="container nav-wrap">
+    <a class="brand" href="./"><span class="brand-mark">◎</span><span>Project Atlas</span></a>
+    <button class="menu-toggle" aria-expanded="false" aria-controls="site-nav">Menu</button>
+    <nav id="site-nav" class="site-nav">
+      <a href="./">Home</a><a href="research/">Research</a><a href="articles/">Articles</a>
+      <a class="nav-button" href="research/">Atlas Papers</a>
+    </nav>
+  </div>
+</header>
+
+<main>
+<section class="article-hero">
+  <div class="article-shell">
+    <p class="eyebrow">Open technical review</p>
+    <h1 class="article-title">Challenge Project Atlas.</h1>
+    <p class="article-deck">Useful review identifies prior art, incorrect assumptions, security and privacy risks, missing standards, or a better experiment.</p>
+  </div>
+</section>
+
+<section class="article-body">
+  <div class="article-shell">
+    <h2>What to include</h2>
+    <div class="review-question-grid">
+      <article><span>01</span><h3>Existing work</h3><p>Which technology, standard, paper, company, or architecture already addresses the proposed gap?</p></article>
+      <article><span>02</span><h3>Incorrect assumptions</h3><p>Which claim is wrong, incomplete, unsafe, or likely to fail in practice?</p></article>
+      <article><span>03</span><h3>Next experiment</h3><p>What should Atlas build or test first to validate or falsify the thesis?</p></article>
+    </div>
+
+    <div class="callout">
+      <strong>Public review through GitHub</strong>
+      Reviews submitted as GitHub issues remain visible, discussable, and traceable as the research changes.
+    </div>
+
+    <a id="github-review-link" class="button button-primary" href="https://github.com/mtsalisbury/ProjectAtlas/issues/new" target="_blank" rel="noopener">Submit review on GitHub</a>
+
+    <h2>Suggested review format</h2>
+    <pre class="review-template">Paper or page:
+Area of expertise:
+Summary of concern:
+Specific claim or section:
+Existing technology or prior art:
+Why this matters:
+Recommended correction or experiment:
+References:</pre>
+
+    <p class="microcopy">Do not include confidential, proprietary, personal, or security-sensitive information in a public GitHub issue.</p>
+  </div>
+</section>
+</main>
+
+<footer class="site-footer">
+  <div class="container footer-grid">
+    <div><a class="brand footer-brand" href="./"><span class="brand-mark">◎</span><span>Project Atlas</span></a><p>Open technical research into person-controlled Internet presence.</p></div>
+    <div class="footer-links"><a href="research/">Research</a><a href="articles/">Articles</a></div>
+  </div>
+</footer>
+<script src="assets/js/site.js"></script>
+<script>
+  const params = new URLSearchParams(window.location.search);
+  const paper = params.get("paper");
+  const link = document.getElementById("github-review-link");
+  if (paper && link) {
+    const title = encodeURIComponent("Technical review: " + paper);
+    const body = encodeURIComponent(
+`Paper or page: ${paper}
+Area of expertise:
+
+Summary of concern:
+
+Specific claim or section:
+
+Existing technology or prior art:
+
+Why this matters:
+
+Recommended correction or experiment:
+
+References:
+`);
+    link.href = `https://github.com/mtsalisbury/ProjectAtlas/issues/new?title=${title}&body=${body}`;
+  }
+</script>
+</body>
+</html>
