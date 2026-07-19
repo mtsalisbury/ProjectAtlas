@@ -674,3 +674,57 @@ h3 {
     flex-direction: column;
   }
 }
+
+
+/* Atlas Paper and review pages */
+.paper-hero {
+  padding: 76px 0 58px;
+  background: linear-gradient(180deg,#fff 0%,#f8f9fd 100%);
+  border-bottom: 1px solid var(--line);
+}
+.paper-shell { width: min(calc(100% - 40px), 960px); margin: 0 auto; }
+.paper-meta { display:flex; flex-wrap:wrap; gap:10px 20px; margin-bottom:24px; color:var(--muted); font-size:12px; font-weight:800; text-transform:uppercase; letter-spacing:.08em; }
+.paper-title { max-width:900px; margin-bottom:20px; font-size:clamp(48px,7vw,78px); line-height:1; letter-spacing:-.06em; }
+.paper-deck { max-width:760px; color:var(--muted); font-size:23px; line-height:1.55; }
+.thesis-card { margin-top:42px; padding:28px 30px; background:var(--accent-soft); border:1px solid #dfe2ff; border-radius:20px; }
+.thesis-label { display:block; margin-bottom:10px; color:var(--accent-dark); font-size:11px; font-weight:900; letter-spacing:.12em; text-transform:uppercase; }
+.thesis-card p { margin:0; font-size:20px; line-height:1.6; font-weight:700; }
+.paper-layout { width:min(calc(100% - 40px),1180px); margin:0 auto; display:grid; grid-template-columns:220px minmax(0,760px); gap:70px; justify-content:center; padding:72px 0 104px; }
+.paper-toc { position:sticky; top:104px; align-self:start; display:grid; gap:10px; color:var(--muted); font-size:13px; line-height:1.4; }
+.paper-toc strong { margin-bottom:8px; color:var(--ink); }
+.paper-toc a:hover { color:var(--accent); }
+.paper-body { color:#303a52; font-size:18px; line-height:1.82; }
+.paper-body section { scroll-margin-top:100px; margin-bottom:78px; }
+.paper-body h2 { margin-bottom:22px; color:var(--ink); font-size:42px; }
+.paper-body h3 { margin-top:34px; color:var(--ink); }
+.paper-body p { margin-bottom:24px; }
+.paper-body ul,.paper-body ol { padding-left:24px; }
+.paper-body li { margin-bottom:11px; }
+.section-number { margin-bottom:10px !important; color:var(--accent); font-size:12px; font-weight:900; letter-spacing:.12em; }
+.paper-body blockquote { margin:40px 0; padding:8px 0 8px 25px; border-left:4px solid var(--accent); color:var(--ink); font-size:25px; line-height:1.5; font-weight:750; }
+.definition-grid,.principle-cards,.review-question-grid { display:grid; grid-template-columns:repeat(2,1fr); gap:16px; margin:32px 0; }
+.definition-grid article,.principle-cards article,.review-question-grid article { padding:24px; background:var(--surface); border:1px solid var(--line); border-radius:18px; }
+.definition-grid h3,.principle-cards h3,.review-question-grid h3 { margin-top:0; font-size:19px; }
+.definition-grid p,.principle-cards p,.review-question-grid p { margin-bottom:0; color:var(--muted); font-size:15px; line-height:1.65; }
+.review-question-grid span { color:var(--accent); font-size:12px; font-weight:900; }
+.table-wrap { overflow-x:auto; margin:30px 0 14px; border:1px solid var(--line); border-radius:18px; }
+.comparison-table { width:100%; min-width:760px; border-collapse:collapse; background:var(--white); font-size:14px; }
+.comparison-table th,.comparison-table td { padding:15px 16px; border-bottom:1px solid var(--line); text-align:left; vertical-align:top; }
+.comparison-table th { color:var(--ink); background:var(--surface); }
+.comparison-table tr:last-child td { border-bottom:0; }
+.table-note { color:var(--muted); font-size:13px; }
+.question-list li { margin-bottom:18px; padding-left:8px; }
+.review-cta { margin-top:36px; padding:30px; background:var(--surface); border:1px solid var(--line); border-radius:20px; }
+.review-cta .button { margin:8px 8px 0 0; }
+.paper-status { padding-top:30px; border-top:1px solid var(--line); color:var(--muted); font-size:13px; }
+.review-template { overflow-x:auto; padding:24px; background:#111831; color:#edf0ff; border-radius:18px; font:14px/1.75 ui-monospace,SFMono-Regular,Menlo,Consolas,monospace; white-space:pre-wrap; }
+@media (max-width:900px) {
+  .paper-layout { grid-template-columns:1fr; gap:36px; }
+  .paper-toc { position:static; padding:22px; background:var(--white); border:1px solid var(--line); border-radius:18px; }
+}
+@media (max-width:650px) {
+  .paper-shell,.paper-layout { width:min(calc(100% - 28px),960px); }
+  .definition-grid,.principle-cards,.review-question-grid { grid-template-columns:1fr; }
+  .paper-body h2 { font-size:34px; }
+  .paper-title { font-size:clamp(42px,13vw,60px); }
+}
