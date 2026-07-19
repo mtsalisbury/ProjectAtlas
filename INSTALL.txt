@@ -1,0 +1,12 @@
+PROJECT ATLAS DESIGN SYSTEM UPDATE
+
+1. Unzip this package.
+2. Copy the `docs` folder into your local `ProjectAtlas` repository.
+3. Choose Replace/Merge when macOS asks. This updates files inside the existing `docs` folder.
+4. Do not copy DESIGN-SYSTEM.md unless you want it in the repository root.
+5. In GitHub Desktop, review the changed files.
+6. Commit message: Add Project Atlas design system v1
+7. Push origin.
+8. Wait for GitHub Pages to redeploy, then hard-refresh the site.
+
+GitHub Pages remains: main branch, /docs folder.
