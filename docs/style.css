@@ -674,3 +674,21 @@ h3 {
     flex-direction: column;
   }
 }
+
+/* Atlas Journal */
+.article-hero{padding:82px 0 54px;background:linear-gradient(180deg,#fff 0%,#f8f9fd 100%);border-bottom:1px solid var(--line)}
+.article-shell{width:min(calc(100% - 40px),760px);margin:0 auto}
+.article-kicker{display:flex;flex-wrap:wrap;gap:12px 18px;margin-bottom:24px;color:var(--muted);font-size:13px;font-weight:750}
+.article-title{margin-bottom:24px;font-size:clamp(46px,7vw,76px);line-height:1.02;letter-spacing:-.055em}
+.article-deck{margin-bottom:0;color:var(--muted);font-size:22px;line-height:1.55}
+.article-body{padding:72px 0 96px;background:var(--white)}
+.article-body .article-shell{color:#303a52;font-size:19px;line-height:1.82}
+.article-body h2{margin-top:64px;margin-bottom:18px;color:var(--ink);font-size:38px}
+.article-body h3{margin-top:40px;color:var(--ink)}
+.article-body p{margin-bottom:26px}
+.article-body blockquote{margin:48px 0;padding:10px 0 10px 26px;color:var(--ink);border-left:4px solid var(--accent);font-size:27px;line-height:1.45;font-weight:750}
+.callout{margin:46px 0;padding:28px 30px;background:var(--accent-soft);border:1px solid #dfe2ff;border-radius:20px}
+.callout strong{display:block;margin-bottom:8px;color:var(--accent-dark)}
+.article-next{margin-top:70px;padding-top:34px;border-top:1px solid var(--line)}
+.article-list{display:grid;gap:20px}.article-list .publication{padding:34px}
+@media(max-width:760px){.article-shell{width:min(calc(100% - 28px),760px)}.article-title{font-size:clamp(42px,13vw,62px)}.article-deck{font-size:19px}.article-body .article-shell{font-size:18px}.article-body h2{font-size:32px}.article-body blockquote{font-size:23px}}
