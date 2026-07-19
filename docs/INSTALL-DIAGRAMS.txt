@@ -1,0 +1,31 @@
+PROJECT ATLAS — TECHNICAL DIAGRAMS UPDATE
+
+This package is a MERGE update. Do not replace the entire repository.
+
+Copy the contents of the included docs folder into your local ProjectAtlas/docs folder and allow matching files to be replaced.
+
+NEW FILES / FOLDERS (merge):
+- docs/diagrams/index.html
+- docs/assets/diagrams/atlas-high-level-architecture.svg
+- docs/assets/diagrams/trust-relationship-model.svg
+- docs/assets/diagrams/secure-connectivity-traffic-flow.svg
+- docs/assets/diagrams/identity-key-architecture.svg
+
+REPLACE THESE EXISTING FILES:
+- docs/style.css
+- docs/research/papers/atlas-paper-001.html
+- docs/index.html
+- docs/research/index.html
+- docs/articles/index.html
+- docs/articles/the-internet-recognizes-accounts.html
+- docs/review.html
+- docs/survey-setup.html
+
+The replacement HTML files only add a visible Diagrams navigation link. The paper replacement adds Section 6 with four embedded SVG diagrams and correct full-size/download links.
+
+After copying:
+1. Open GitHub Desktop.
+2. Review the changed files.
+3. Commit with: Add Atlas technical diagram library
+4. Push origin.
+5. After GitHub Pages deploys, open /ProjectAtlas/diagrams/ and Paper 001.

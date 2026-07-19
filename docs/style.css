@@ -857,3 +857,19 @@ h3 {
     font-size: 34px;
   }
 }
+
+
+/* Atlas diagram library and embedded technical drawings */
+.diagram-library { padding: 72px 0 104px; background: var(--surface); }
+.diagram-grid { display: grid; gap: 28px; }
+.diagram-card { padding: 30px; background: var(--white); border: 1px solid var(--line); border-radius: var(--radius); box-shadow: 0 14px 38px rgba(34,42,91,.06); }
+.diagram-card-head { display:flex; align-items:flex-start; justify-content:space-between; gap:24px; margin-bottom:22px; }
+.diagram-card-head h2 { margin: 6px 0 0; font-size: clamp(27px,3vw,38px); }
+.diagram-card > p { color:var(--muted); font-size:16px; line-height:1.65; }
+.diagram-preview { display:block; overflow:hidden; margin-bottom:22px; background:#fff; border:1px solid var(--line); border-radius:18px; }
+.diagram-preview img { display:block; width:100%; height:auto; }
+.technical-figure { margin: 38px 0 54px; }
+.technical-figure img { display:block; width:100%; height:auto; background:#fff; border:1px solid var(--line); border-radius:18px; }
+.technical-figure figcaption { padding:14px 4px 0; color:var(--muted); font-size:14px; line-height:1.55; }
+.figure-actions { display:flex; flex-wrap:wrap; gap:10px; margin-top:14px; }
+@media (max-width:650px) { .diagram-card { padding:20px; } .diagram-card-head { flex-direction:column; } }

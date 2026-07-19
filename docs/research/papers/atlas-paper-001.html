@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width,initial-scale=1">
   <meta name="description" content="Atlas Paper 001 examines whether the Internet is missing a persistent, person-controlled presence layer.">
   <title>Atlas Paper 001 — The Missing Layer of the Internet</title>
-  <link rel="stylesheet" href="../../style.css?v=20260719-2">
+  <link rel="stylesheet" href="../../style.css">
 </head>
 <body>
 <header class="site-header">
@@ -16,6 +16,7 @@
       <a href="../../">Home</a>
       <a href="../">Research</a>
       <a href="../../articles/">Articles</a>
+      <a href="../../diagrams/">Diagrams</a>
       <a href="#open-questions">Open questions</a>
       <a class="nav-button" href="../../review.html?paper=Atlas%20Paper%20001">Send a review</a>
     </nav>
@@ -50,9 +51,10 @@
     <a href="#landscape">3. Existing Landscape</a>
     <a href="#gap">4. The Proposed Gap</a>
     <a href="#platform">5. Personal Internet Presence</a>
-    <a href="#comparison">6. Comparison Framework</a>
-    <a href="#open-questions">7. Open Questions</a>
-    <a href="#review">8. Call for Review</a>
+    <a href="#technical-drawings">6. Technical Drawings</a>
+    <a href="#comparison">7. Comparison Framework</a>
+    <a href="#open-questions">8. Open Questions</a>
+    <a href="#review">9. Call for Review</a>
   </aside>
 
   <article class="paper-body">
@@ -128,8 +130,20 @@
       </ul>
     </section>
 
-    <section id="comparison">
+
+    <section id="technical-drawings">
       <p class="section-number">06</p>
+      <h2>Technical Drawings</h2>
+      <p>The following diagrams translate the initial Atlas thesis into reusable architectural references. They are conceptual rather than production specifications and should be reviewed alongside the assumptions and open questions in this paper.</p>
+      <figure class="technical-figure"><a href="../../assets/diagrams/atlas-high-level-architecture.svg" target="_blank" rel="noopener"><img src="../../assets/diagrams/atlas-high-level-architecture.svg" alt="Personal Internet Presence high-level architecture"></a><figcaption><strong>Figure 6.1 — Personal Internet Presence: High-Level Architecture.</strong> The Atlas client combines identity, presence, policy and secure networking functions and uses the Atlas network to reach applications, services, organizations and other users.</figcaption><div class="figure-actions"><a class="button button-secondary" href="../../assets/diagrams/atlas-high-level-architecture.svg" target="_blank" rel="noopener">Open full size</a><a class="button button-secondary" href="../../assets/diagrams/atlas-high-level-architecture.svg" download>Download SVG</a></div></figure>
+      <figure class="technical-figure"><a href="../../assets/diagrams/trust-relationship-model.svg" target="_blank" rel="noopener"><img src="../../assets/diagrams/trust-relationship-model.svg" alt="Trust relationship model"></a><figcaption><strong>Figure 6.2 — Trust Relationship Model.</strong> Each relationship is independently scoped between the person and the relying entity; unrelated organizations do not inherit one another's trust.</figcaption><div class="figure-actions"><a class="button button-secondary" href="../../assets/diagrams/trust-relationship-model.svg" target="_blank" rel="noopener">Open full size</a><a class="button button-secondary" href="../../assets/diagrams/trust-relationship-model.svg" download>Download SVG</a></div></figure>
+      <figure class="technical-figure"><a href="../../assets/diagrams/secure-connectivity-traffic-flow.svg" target="_blank" rel="noopener"><img src="../../assets/diagrams/secure-connectivity-traffic-flow.svg" alt="Secure connectivity and traffic flow"></a><figcaption><strong>Figure 6.3 — Secure Connectivity and Traffic Flow.</strong> The client establishes an encrypted relationship with the Atlas network, which applies user policy and routes traffic to public applications, APIs, private resources or peers.</figcaption><div class="figure-actions"><a class="button button-secondary" href="../../assets/diagrams/secure-connectivity-traffic-flow.svg" target="_blank" rel="noopener">Open full size</a><a class="button button-secondary" href="../../assets/diagrams/secure-connectivity-traffic-flow.svg" download>Download SVG</a></div></figure>
+      <figure class="technical-figure"><a href="../../assets/diagrams/identity-key-architecture.svg" target="_blank" rel="noopener"><img src="../../assets/diagrams/identity-key-architecture.svg" alt="Identity and key architecture"></a><figcaption><strong>Figure 6.4 — Identity and Key Architecture.</strong> User-controlled keys and recovery mechanisms feed an identity vault that issues scoped assertions for applications, devices, networks and transactions.</figcaption><div class="figure-actions"><a class="button button-secondary" href="../../assets/diagrams/identity-key-architecture.svg" target="_blank" rel="noopener">Open full size</a><a class="button button-secondary" href="../../assets/diagrams/identity-key-architecture.svg" download>Download SVG</a></div></figure>
+      <div class="review-cta"><h3>Atlas Diagram Library</h3><p>Open the reusable visual reference library to view or download the current diagrams independently of this paper.</p><a class="button button-primary" href="../../diagrams/">Open Diagram Library</a></div>
+    </section>
+
+    <section id="comparison">
+      <p class="section-number">07</p>
       <h2>Comparison Framework</h2>
       <div class="table-wrap">
         <table class="comparison-table">
@@ -149,7 +163,7 @@
     </section>
 
     <section id="open-questions">
-      <p class="section-number">07</p>
+      <p class="section-number">08</p>
       <h2>Open Questions</h2>
       <ol class="question-list">
         <li>Does the proposed gap exist, or is it already covered by existing identity, wallet, mesh, or Zero Trust architectures?</li>
@@ -166,7 +180,7 @@
     </section>
 
     <section id="review">
-      <p class="section-number">08</p>
+      <p class="section-number">09</p>
       <h2>Call for Industry Review</h2>
       <p>This paper is deliberately incomplete. Its purpose is to expose the thesis to informed challenge before the architecture is overbuilt or described as solved.</p>
       <p>Reviewers are asked to address three direct questions:</p>
@@ -196,7 +210,7 @@
 <footer class="site-footer">
   <div class="container footer-grid">
     <div><a class="brand footer-brand" href="../../"><span class="brand-mark">◎</span><span>Project Atlas</span></a><p>Open technical research into person-controlled Internet presence.</p></div>
-    <div class="footer-links"><a href="../">Research</a><a href="../../articles/">Articles</a><a href="../../review.html">Review</a></div>
+    <div class="footer-links"><a href="../">Research</a><a href="../../articles/">Articles</a><a href="../../diagrams/">Diagrams</a><a href="../../review.html">Review</a></div>
   </div>
 </footer>
 <script src="../../assets/js/site.js"></script>
