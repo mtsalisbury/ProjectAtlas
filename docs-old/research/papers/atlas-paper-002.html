@@ -140,9 +140,6 @@
      <a href="#references">
       19. References
      </a>
-     <a href="#s21">
-      21. Addendum: Initial Test Results
-     </a>
     </aside>
     <article class="paper-body">
      <section id="s01">
@@ -827,29 +824,6 @@
        </a>
       </div>
      </section>
-    <section id="s21">
-     <p class="section-number">
-      21
-     </p>
-     <h2>
-      Addendum: Minimum Viable Prototype, Initial Test Results (July 2026)
-     </h2>
-     <p>
-      Section 15 specified a minimum viable research prototype, two of whose measurable behaviors correspond to Hypotheses H5 and H6 in Section 16. A first execution of that prototype has now been completed and is reported here, including what was and was not actually exercised, so these results can be evaluated on their own terms.
-     </p>
-     <p>
-      The prototype was built by composing existing standards rather than new infrastructure, consistent with Section 4's composition-before-invention principle: a self-hosted, Tailscale-compatible coordination server (Headscale) reverse-proxied for automatic TLS, with three isolated contexts — personal, employment and pseudonymous — created as separate namespaces, each with independent identifiers and no shared linkage by default. Two physical devices, a laptop and a phone, were enrolled under the personal context. The employment and pseudonymous contexts were created but not populated or tested in this pass; this addendum accordingly reports only on H5 and H6, not H1 or H4, which require devices operating under more than one context.
-     </p>
-     <p>
-      The first test addressed persistence across transport changes (H6). The laptop was enrolled and confirmed active under the personal context on a home network, then switched without reconfiguration, logout or re-enrollment to a mobile hotspot on a different upstream provider. Server-side records — the authoritative source, not the client's self-reported status — showed the device's last-seen timestamp updating after the switch, with connection status remaining current under the same identity throughout. This result is consistent with H6 and does not falsify it, though it reflects a single trial on one device pair and does not establish persistence under adversarial network conditions or at scale.
-     </p>
-     <p>
-      The second test addressed device recovery (H5). With both devices enrolled and confirmed active, the laptop's registration was revoked server-side. The phone's status was unaffected throughout, remaining active under the personal context with no observable disruption — the isolation half of H5 held. The propagation half produced a more specific finding: the laptop's own local status display continued to show its prior, now-revoked state and its peer for a period after the server-side deletion, while a direct connectivity probe against the peer failed immediately following revocation. Enforcement was effectively immediate; the revoked device's awareness of its own state was not. This gap is worth stating plainly for anyone extending this prototype: a device's local status display cannot be treated as evidence of its actual connectivity state, and any future reliance on client self-reported status for a security-relevant decision would be a mistake. Server-side, or actively probed, state was the only reliable signal observed.
-     </p>
-     <p>
-      This addendum does not establish scale — one tester, two devices, one trial per test — nor does it address adversarial conditions, cross-context isolation under H1 or H4, or the packet-level, identity-flow and metadata diagrams Section 15 calls for, none of which were produced in this pass. Suggested next steps are to repeat both tests using the employment or pseudonymous contexts, to produce the diagrams Section 15 specifies, and to characterize the propagation delay identified above, including whether it is configurable, since it bears directly on how quickly a person would notice an unauthorized device had been removed from their own presence.
-     </p>
-    </section>
     </article>
    </section>
   </main>
