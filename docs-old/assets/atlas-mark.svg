@@ -1,5 +1,0 @@
-<svg width="64" height="64" viewBox="0 0 64 64" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Project Atlas mark">
-  <rect width="64" height="64" rx="18" fill="#555BD6"/>
-  <circle cx="32" cy="32" r="17" fill="none" stroke="white" stroke-width="3"/>
-  <path d="M15 32h34M32 15c7 7 7 27 0 34M32 15c-7 7-7 27 0 34" fill="none" stroke="white" stroke-width="3" stroke-linecap="round"/>
-</svg>
