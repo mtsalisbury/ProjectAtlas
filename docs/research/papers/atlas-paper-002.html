@@ -143,6 +143,9 @@
      <a href="#s21">
       21. Addendum: Initial Test Results
      </a>
+     <a href="#s22">
+      22. Addendum: Cross-Context Isolation Finding
+     </a>
     </aside>
     <article class="paper-body">
      <section id="s01">
@@ -850,6 +853,26 @@
       This addendum does not establish scale — one tester, two devices, one trial per test — nor does it address adversarial conditions, cross-context isolation under H1 or H4, or the packet-level, identity-flow and metadata diagrams Section 15 calls for, none of which were produced in this pass. Suggested next steps are to repeat both tests using the employment or pseudonymous contexts, to produce the diagrams Section 15 specifies, and to characterize the propagation delay identified above, including whether it is configurable, since it bears directly on how quickly a person would notice an unauthorized device had been removed from their own presence.
      </p>
     </section>
+    <section id="s22">
+ <p class="section-number">
+  22
+ </p>
+ <h2>
+  Addendum: Cross-Context Isolation Finding (July 2026)
+ </h2>
+ <p>
+  A follow-on test to the Section 21 prototype examined a question not covered there: whether devices belonging to different people, both notionally operating within the same kind of context, remain isolated from one another — as distinct from whether one person's own contexts stay separated. This bears directly on Hypothesis H2, since it tests whether the composed mesh alone, without additional policy, already provides the coordination Atlas proposes to add.
+ </p>
+ <p>
+  A second Headscale namespace was created to simulate a different individual also operating an employment-type context. A device was enrolled under each of the two separate namespaces. A direct connectivity probe from one namespace's device to the other succeeded — the mesh, composed as-is with no additional policy layer, allowed full reachability between two unrelated people's devices by default. This is a negative result for H2 as originally hoped: the residual coordination problem is real, but composition alone does not resolve it. An explicit policy layer is required, not optional.
+ </p>
+ <p>
+  An access control policy was then defined, grouping each namespace independently and permitting reachability only within a group, denying all cross-group traffic by default. After this policy was applied, the same connectivity probe failed — notably not as a blocked or refused connection, but as an absent peer: the requesting device was never informed the other device existed. This is a stronger isolation property than a network-level block would provide, since it withholds visibility rather than merely restricting access.
+ </p>
+ <p>
+  Read together, these two results are the clearest evidence so far bearing on H2: existing secure-connectivity composition does leave a residual coordination problem, and closing it required exactly the kind of explicit, person-controlled policy layer Atlas proposes — not a new protocol, but a policy applied on top of existing infrastructure. This remains a small-scale finding: two synthetic namespaces on one server, one trial, no test of correlation through metadata such as timing, IP address, or relay selection, which could still link the two contexts even with reachability blocked. Those remain open for further testing.
+ </p>
+</section>
     </article>
    </section>
   </main>
