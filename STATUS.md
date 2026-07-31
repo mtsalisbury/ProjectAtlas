@@ -31,6 +31,7 @@
 - Mobile can't be fully zero-touch with current tooling — confirmed, Tailscale's mobile apps have no way to accept a pre-auth key.
 - Desktop/Mac *can* be genuinely zero-touch today, via a wrapped `--authkey` script — designed, not yet built.
 - No portal device, no proximity requirement — phones just need ordinary internet access to reach the server.
+- **This is a controlled package, not an open internet standard.** Atlas decides which relying parties participate, indefinitely — not a stepping stone toward eventually opening to anyone. Public-key verification (over a shared secret) is still the right technical approach even inside this closed model — that's an engineering choice, separate from who's allowed to be a relying party at all.
 
 ## Part 3 — Presence: What's Actually Offered, By Evidence Tier
 
