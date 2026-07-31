@@ -25,6 +25,8 @@
 
 **Operational documentation (in `ops/`):** `KB-Device-Onboarding-Flow.md`, `Runbook-OIDC-Setup.md` — these stay as separate reference playbooks, not status; they don't change often and aren't part of the "one thing to update."
 
+**Declared-origin routing test (Toronto/London exit-node experiment):** attempted, not yet proven. Toronto stood up cleanly as an exit node and stayed healthy throughout — that part worked. The traveling side (a London droplet, meant to prove traffic egressing through Toronto) failed twice in the same way, right at the moment the exit-node route was applied — both the browser Web Console and direct SSH became unreachable, consistent with the node losing its own path back out while switching all traffic through the exit node. London was destroyed rather than repeatedly patched, given the repeated failure. This is a real, useful finding, not a wasted session: it confirms exit-node infrastructure needs a safer failure mode (a way back in if a route change goes wrong) before this test is retried, not just a fresh droplet. Worth building that safeguard first next time, not just trying again.
+
 ## Part 2 — Decisions Already Made — Don't Re-litigate
 
 - The public site stays pure research. Book 01 and the consumer-facing pieces stay separate, sent directly to specific people.
