@@ -10,11 +10,15 @@ The private key behind a passkey never leaves the user's device — generated in
 
 Today, losing a device and getting a passkey back relies on iCloud Keychain or Google Password Manager — real, secure systems, but ones Atlas doesn't control. "Ours" is compromised if recovering it always routes through someone else's infrastructure.
 
-**Decided: a recovery portal, checking a self-held recovery secret — not a second device, not Apple, not Google, not Atlas itself.** At registration, the identity service generates a recovery phrase, shown exactly once, that the person must store themselves. Losing a device means going to the portal and providing that phrase — nothing else is checked, and nobody but the person holds a copy. This is the same model serious crypto wallets use, and it's the only one of the real options that depends on no company at all, Atlas included.
+**Decided: a recovery portal, checking a self-held recovery phrase — plus a second factor at the portal itself.** At registration, the identity service generates a recovery phrase, shown exactly once, that the person must store themselves. The portal is the single highest-value target in the whole system by design — it exists specifically for when the everyday passkey isn't available, so it can't lean on that same protection. A second factor (an authenticator app set up separately from the primary device, at registration) protects the portal itself: recovering a lost Presence requires both the phrase and that second factor, not the phrase alone.
 
 **The honest cost, stated plainly, not hidden:** if someone loses the phrase too, there is no safety net. Neither Atlas nor anyone else can recover it for them. That's not an oversight to fix later — it's the actual price of the phrase being genuinely theirs rather than something a company could hand back on request. A recoverable-by-Atlas safety net would mean Atlas has power over recovery, which defeats the point.
 
-**What this needs, concretely:** the portal itself (a real page, separate from any single relying party), the one-time phrase generation and display flow, and the "authorize a new device using the phrase" logic in the identity service. Real, scoped work — not yet built, not yet tested.
+**What this needs, concretely:** the portal itself (a real page, separate from any single relying party), the one-time phrase generation and display flow, a second-factor enrollment step at registration, and the "authorize a new device" logic in the identity service. Real, scoped work — not yet built, not yet tested.
+
+## A principle worth naming explicitly: Presence gets shared. Data doesn't.
+
+The way a government portal checks whether someone's alive by asking a bank a single yes-or-no question — never requesting the underlying personal data — is exactly the pattern the token architecture in `Scope_Unify_Presence.md` already implements. One relying party attests a Presence is valid; another trusts that attestation. The actual credential never crosses between them. This isn't a new feature to design — it's the principle the whole signed-token approach has been building toward, worth stating outright rather than leaving implicit.
 
 ## Gap 2: What Atlas itself can see
 

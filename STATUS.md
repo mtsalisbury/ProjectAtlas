@@ -32,6 +32,7 @@
 - Desktop/Mac *can* be genuinely zero-touch today, via a wrapped `--authkey` script — designed, not yet built.
 - No portal device, no proximity requirement — phones just need ordinary internet access to reach the server.
 - **This is a controlled package, not an open internet standard.** Atlas decides which relying parties participate, indefinitely — not a stepping stone toward eventually opening to anyone. Public-key verification (over a shared secret) is still the right technical approach even inside this closed model — that's an engineering choice, separate from who's allowed to be a relying party at all.
+- **Presence gets shared. Data doesn't.** A relying party attests that a Presence is valid; another relying party trusts that attestation. The underlying credential — the actual passkey — never crosses between them, the same way a government checking your bank's "yes, this is a real person" never sees your account details.
 
 ## Part 3 — Presence: What's Actually Offered, By Evidence Tier
 
