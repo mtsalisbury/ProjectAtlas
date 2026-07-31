@@ -24,7 +24,9 @@ The way a government portal checks whether someone's alive by asking a bank a si
 
 An identity service that logs every authentication in full detail — exact relying party, timestamp, frequency — becomes a place where someone's whole pattern of activity is visible to Atlas, even if no individual relying party can see it. That undermines "ours" from a different direction than Gap 1: not "can someone else's cloud lock me out," but "can Atlas itself watch too much."
 
-**Decided, superseding the earlier blind-signature direction: Atlas sees the destination URL or IP, and classifies it into a small set of categories — bank, airline, home, and so on — nothing more granular than that.** No behavioral profiling, no fine-grained browsing history beyond the category itself. Alongside that: a real safety blocklist — known dark web destinations and known terrorist-affiliated infrastructure get blocked outright, not just logged.
+**Decided, final: blind signatures — Atlas cannot see the destination at all, not even in category form. Destination-level safety filtering (dark web, terrorist-affiliated infrastructure, and anything else in that category) is correctly an ISP function, not Atlas's.** That's a real, clean line: Atlas's function is Presence — proving who someone is. Filtering what the open internet is allowed to reach is a different layer, already handled elsewhere, and taking it on would mean building exactly the kind of visibility Gap 2 exists to prevent, for a function that isn't actually Atlas's to perform.
+
+**What this means concretely:** the identity service signs a valid Presence token without knowing which relying party it will be used at — meaning Atlas structurally can't build an activity pattern even if it wanted to. This is real, established cryptography (blind signatures / privacy-preserving credential schemes), not speculative. It's meaningfully more engineering than the simpler alternative, and it shapes how the identity service issues tokens from the ground up — worth designing in from the start of Phase 1 rather than retrofitting later.
 
 **Worth being precise about the tradeoff, since this replaces a stronger privacy guarantee, not extends it:** true blind signatures — Atlas structurally unable to see the destination at all, even in category form — is incompatible with this. Seeing enough to categorize and block is real visibility, not "Atlas promises not to look." This is a deliberate, narrower privacy stance than the one decided a few minutes earlier the same night: category-level visibility, in exchange for a real safety backstop, instead of zero visibility with no backstop at all.
 
@@ -33,7 +35,7 @@ An identity service that logs every authentication in full detail — exact rely
 Both open questions below were resolved later the same night — recorded here for the history, not as open items. See the Gap 1 and Gap 2 sections above for the actual decisions.
 
 1. ~~Is multi-device peer-authorization the primary recovery path, or a secondary option alongside platform keychain sync?~~ — Resolved: neither. A recovery portal checking a self-held phrase, protected by a second factor.
-2. ~~For Gap 2, start with the simple transparency answer, or invest in the stronger cryptographic one from the start?~~ — Resolved, then revised the same night: not blind signatures after all. Category-level visibility (bank/airline/home) plus a real safety blocklist, in exchange for a genuine backstop instead of zero visibility.
+2. ~~For Gap 2, start with the simple transparency answer, or invest in the stronger cryptographic one from the start?~~ — Resolved, briefly revised, then settled back: blind signatures, final. The category-visibility and safety-blocklist detour was removed the same night — that responsibility belongs to the ISP layer, not Atlas.
 
 ## Where this sits relative to the other two scoping documents
 

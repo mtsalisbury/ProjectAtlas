@@ -12,9 +12,9 @@
 *From: Scope_Presence_Ownership.md*
 Generated once at registration, held only by the person, checked only at the portal. Depends on no company — not Apple, not Google, not Atlas itself. The real cost: no safety net if the phrase is lost too. That's the accepted price of it being genuinely theirs.
 
-### 2. ~~Visibility: simple transparency, or the stronger cryptographic one (blind signatures)?~~ — **Decided, then revised same night: neither, exactly. Category-level visibility plus a safety blocklist.**
+### 2. ~~Visibility: simple transparency, blind signatures, or category-level with a blocklist?~~ — **Decided, final: blind signatures.**
 *From: Scope_Presence_Ownership.md*
-Not blind signatures after all — that would mean Atlas can't see the destination even in category form, which conflicts directly with the safety requirement below. Instead: Atlas can see the destination URL/IP and classify it into a small set of categories (bank, airline, home), nothing more granular, plus a real blocklist for known dark web and terrorist-affiliated destinations. Worth being honest this is a real, deliberate walk-back of the stronger privacy guarantee — a genuine tradeoff, not a free upgrade.
+Went through a brief detour to category-visibility with a safety blocklist, then settled back — destination-level filtering (dark web, terrorist-affiliated infrastructure) is correctly the ISP's function, not Atlas's. Once that responsibility is off the table, there's no remaining reason to give up the stronger guarantee. Atlas structurally cannot see which relying party a token is used at.
 
 ---
 
@@ -50,8 +50,8 @@ Same as above — depends on infrastructure that doesn't exist yet. Revisit once
 
 ## New from tonight — genuinely unresolved, worth real time before building
 
-### 8. Malicious-activity monitoring conflicts directly with the privacy decisions already locked in.
-Wanting to catch bad actors (the Venmo comparison) requires real visibility into activity. Gap 2's direction — minimizing what Atlas can see, blind signatures on the table — was built specifically to *prevent* that visibility. These can't both be true at full strength. Needs a real decision: how much fraud-detection capability is worth walking back the privacy ceiling for, and where exactly the line sits. Not solved tonight — flagged honestly instead of quietly building past it.
+### 8. ~~Malicious-activity monitoring conflicts directly with the privacy decisions already locked in.~~ — **Decided: not Atlas's function.**
+Resolved the same way as decision #2, and for the same reason: filtering or flagging malicious destinations is the ISP's layer, not an identity platform's. Atlas's function is proving who someone is — not policing what the open internet is allowed to reach. Taking on fraud/malicious-activity monitoring would mean rebuilding exactly the visibility Gap 2 was designed to avoid, for a responsibility that isn't actually Atlas's to carry. No tension left to hold — the two decisions resolve each other.
 
 ### 9. Route Path Selection has a real direction now, but not a full design.
 Resolved conceptually: Headscale's existing exit-node capability, driven by a rule the client itself holds — not new invention. Not yet resolved: how that rule is actually represented (stored where, tied to which part of the Presence token), and how it connects to the identity/token work in `Scope_Unify_Presence.md`. Needs its own short scoping pass, not a full one — the hard conceptual part is already solved.
@@ -83,4 +83,5 @@ If it's tight, upgrading from the current $4–6/month droplet to the next size 
 - Public-key verification, not a shared secret, is the right technical approach regardless of how open or closed registration stays.
 - Token signing algorithm: ES256.
 - Recovery: a portal checking a self-held recovery phrase, generated once at registration. No company-dependent safety net, by design.
-- Visibility: category-level only (bank, airline, home, and so on) — not full blind signing. Atlas sees enough to enforce a real safety blocklist against dark web and terrorist-affiliated destinations; nothing more granular than the category.
+- Visibility: blind signatures, final. Atlas structurally cannot see which relying party a token is used at — not a promise, a cryptographic property.
+- Destination-level safety filtering (dark web, terrorist-affiliated infrastructure, malicious-activity monitoring generally) is the ISP's function, not Atlas's. This isn't a gap to fill later — it's out of scope on purpose.
