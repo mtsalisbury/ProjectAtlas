@@ -8,9 +8,9 @@
 
 ## Blocks everything — answer before Phase 1 of the identity service begins
 
-### 1. Recovery: is multi-device peer-authorization the primary path, or a backup to Apple/Google keychain sync?
+### 1. ~~Recovery: multi-device peer-authorization, or Apple/Google keychain sync?~~ — **Decided: neither. A recovery portal, checking a self-held recovery phrase.**
 *From: Scope_Presence_Ownership.md*
-This decides whether "ours" is real from day one or something to retrofit later. Deciding late means rebuilding the recovery flow instead of designing it right the first time.
+Generated once at registration, held only by the person, checked only at the portal. Depends on no company — not Apple, not Google, not Atlas itself. The real cost: no safety net if the phrase is lost too. That's the accepted price of it being genuinely theirs.
 
 ### 2. Visibility: start with the simple transparency answer, or invest in the stronger cryptographic one (blind signatures) from the start?
 *From: Scope_Presence_Ownership.md*
@@ -52,3 +52,5 @@ Same as above — depends on infrastructure that doesn't exist yet. Revisit once
 - Registration to become a relying party stays closed by default.
 - Declared-origin routing is an optional capability of the one Presence entity — never a blanket, on-by-default override of normal traffic.
 - Public-key verification, not a shared secret, is the right technical approach regardless of how open or closed registration stays.
+- Token signing algorithm: ES256.
+- Recovery: a portal checking a self-held recovery phrase, generated once at registration. No company-dependent safety net, by design.

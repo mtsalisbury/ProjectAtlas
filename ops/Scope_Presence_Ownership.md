@@ -10,9 +10,11 @@ The private key behind a passkey never leaves the user's device — generated in
 
 Today, losing a device and getting a passkey back relies on iCloud Keychain or Google Password Manager — real, secure systems, but ones Atlas doesn't control. "Ours" is compromised if recovering it always routes through someone else's infrastructure.
 
-**The fix already has a head start, from work already tested.** The device-recovery test from night one — revoke one device, confirm the other keeps working undisturbed — is half of the real answer. The missing half: **let an already-enrolled device vouch for a new one**, so recovery doesn't need platform keychain sync at all. Someone with two enrolled devices loses one, uses the second to authorize a replacement, done — no dependency on Apple or Google in that path. Keychain sync becomes a convenience some people use, not the only way back in.
+**Decided: a recovery portal, checking a self-held recovery secret — not a second device, not Apple, not Google, not Atlas itself.** At registration, the identity service generates a recovery phrase, shown exactly once, that the person must store themselves. Losing a device means going to the portal and providing that phrase — nothing else is checked, and nobody but the person holds a copy. This is the same model serious crypto wallets use, and it's the only one of the real options that depends on no company at all, Atlas included.
 
-**What this needs, concretely:** a real "authorize a new device from an existing one" flow in the identity service — not yet built, not yet tested, genuinely new work, but it extends something already proven rather than inventing from nothing.
+**The honest cost, stated plainly, not hidden:** if someone loses the phrase too, there is no safety net. Neither Atlas nor anyone else can recover it for them. That's not an oversight to fix later — it's the actual price of the phrase being genuinely theirs rather than something a company could hand back on request. A recoverable-by-Atlas safety net would mean Atlas has power over recovery, which defeats the point.
+
+**What this needs, concretely:** the portal itself (a real page, separate from any single relying party), the one-time phrase generation and display flow, and the "authorize a new device using the phrase" logic in the identity service. Real, scoped work — not yet built, not yet tested.
 
 ## Gap 2: What Atlas itself can see
 
