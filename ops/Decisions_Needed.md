@@ -24,9 +24,9 @@ The simple answer ships faster. The strong one is a structural guarantee, not a 
 *From: Scope_Unify_Presence.md*
 New subdomain (matching the `mesh.` / `admin.` pattern), or folded into an existing container? Affects the deployment work directly, not just the design.
 
-### 4. What signs the tokens — which algorithm?
+### 4. ~~What signs the tokens — which algorithm?~~ — **Decided: ES256**
 *From: Scope_Unify_Presence.md*
-RS256 or ES256, both real and well-supported. Needs picking once, not revisited casually, since relying parties will depend on whichever choice gets made.
+Smaller, faster, and the current security-community recommendation. The compatibility risk that would normally favor the older RS256 doesn't really apply here — since relying-party registration stays closed and curated, ES256 support is simply confirmed during approval, not a blind risk taken on an unknown partner.
 
 ### 5. How does key rotation actually work?
 *From: Scope_Unify_Presence.md*
