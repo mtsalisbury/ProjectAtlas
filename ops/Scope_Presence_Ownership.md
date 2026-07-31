@@ -24,15 +24,16 @@ The way a government portal checks whether someone's alive by asking a bank a si
 
 An identity service that logs every authentication — which relying party, when, how often — becomes a place where someone's whole pattern of activity is visible to Atlas, even if no individual relying party can see it. That undermines "ours" from a different direction than Gap 1: not "can someone else's cloud lock me out," but "can Atlas itself watch too much."
 
-**Two honest paths, different amounts of work:**
+**Decided: blind signatures, designed in from the start of Phase 1 — not the simpler transparency-only answer.** Techniques exist (blind signatures, privacy-preserving credential schemes) that let Atlas sign a valid Presence token *without knowing which relying party it will be used at* — meaning Atlas structurally can't build the activity pattern even if it wanted to. This is real, established cryptography, not speculative.
 
-- **Simpler, available now:** log as little as possible by default, keep retention short, and publish exactly what is and isn't recorded — transparency as the near-term answer, not a technical guarantee.
-- **Stronger, real, but harder:** techniques exist (blind signatures, privacy-preserving credential schemes) that let Atlas sign a valid Presence token *without knowing which relying party it will be used at* — meaning Atlas structurally can't build the activity pattern even if it wanted to. This is real, established cryptography, not speculative — but it's meaningfully more engineering than anything scoped so far. Worth naming honestly as the stronger answer, not worth committing to building yet.
+**The honest cost, stated plainly:** this is meaningfully more engineering than anything else scoped so far, and it shapes how the identity service issues tokens from the ground up. Designing it in from the start of Phase 1 is the right call precisely because retrofitting it later — after a simpler version already shipped — would mean rebuilding the token-issuance logic, not extending it.
 
 ## Decisions needed
 
-1. **Is multi-device peer-authorization the primary recovery path, or a secondary option alongside platform keychain sync?** Affects how much of Gap 1 gets solved versus mitigated.
-2. **For Gap 2, start with the simple transparency answer, or invest in the stronger cryptographic one from the start?** The simple answer ships faster; the strong one is a real structural guarantee instead of a promise.
+Both open questions below were resolved later the same night — recorded here for the history, not as open items. See the Gap 1 and Gap 2 sections above for the actual decisions.
+
+1. ~~Is multi-device peer-authorization the primary recovery path, or a secondary option alongside platform keychain sync?~~ — Resolved: neither. A recovery portal checking a self-held phrase, protected by a second factor.
+2. ~~For Gap 2, start with the simple transparency answer, or invest in the stronger cryptographic one from the start?~~ — Resolved: blind signatures, from the start of Phase 1.
 
 ## Where this sits relative to the other two scoping documents
 
