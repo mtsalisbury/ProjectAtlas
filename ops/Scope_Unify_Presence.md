@@ -2,6 +2,12 @@
 
 **Status:** Scoping only — nothing built yet | **Answers both open items in STATUS.md at once**
 
+## What this is, and deliberately isn't
+
+This is being built as **a controlled package, not an open internet standard.** Getting every website on earth to adopt a new protocol is a years-long undertaking that depends on convincing people who never asked to be convinced — that's not the goal here, and pursuing it isn't the current job. Atlas decides which relying parties are part of the system. The point is giving the user real control over where their identity and data actually flow, to destinations they and Atlas have both approved — not building a public standard for anyone to plug into.
+
+This doesn't make the technical approach below any less real. Public-key verification instead of a shared secret is still the right engineering choice even inside a fully closed, curated system — it's just better hygiene than manually distributing a secret to every approved partner. What stays closed is *who's allowed to be a relying party at all* — that gate belongs to Atlas, indefinitely, not as a stepping stone toward eventually opening to anyone.
+
 ## The problem, stated precisely
 
 Tonight's bank-to-airline trust works because I configured both services with the same secret myself. That's not real federation — it's two demos I control pretending to be independent. A genuine outside relying party, one we've never spoken to, has no way to get that secret, and shouldn't need to.
