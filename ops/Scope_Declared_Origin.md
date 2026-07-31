@@ -2,6 +2,12 @@
 
 **Status:** Scoping only, for next session | **One Presence entity, growing more capable — not two systems sitting side by side**
 
+## What a relying party actually sees today, and why that matters here
+
+A bank's fraud check mostly relies on two things: IP address (revealing rough location and whether it's a known VPN/datacenter range) and device fingerprint (recognizing a returning device). The native Geolocation API — precise, GPS-based — is separate and opt-in per site; most banks don't use it at all, since asking for that permission on a login screen feels invasive.
+
+This matters for scope: **this capability must never sit between a device and the internet as a blanket intercept.** Normal traffic — Geolocation API calls, IP-based signals, everything — stays completely untouched, for every app and every site, by default. The declared-origin capability only activates where a user has explicitly set a rule for one specific relying party — not a system-wide override. Reveals normally everywhere by default; hides only where explicitly, narrowly configured. This is the opposite default from a VPN, which hides everything unless turned off.
+
 ## What this is
 
 There is one Presence entity per person. Today it can prove *who* you are, via the passkey work already tested. This scope adds a second thing that same entity can optionally carry: a verified, declared *home* location — the way a phone number stays tied to home no matter where the phone physically is. Not a separate feature bolted alongside Presence. A second capability of the one entity, added on top of the first.
