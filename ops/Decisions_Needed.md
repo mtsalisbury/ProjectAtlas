@@ -12,9 +12,9 @@
 *From: Scope_Presence_Ownership.md*
 Generated once at registration, held only by the person, checked only at the portal. Depends on no company — not Apple, not Google, not Atlas itself. The real cost: no safety net if the phrase is lost too. That's the accepted price of it being genuinely theirs.
 
-### 2. ~~Visibility: simple transparency, or the stronger cryptographic one (blind signatures)?~~ — **Decided: blind signatures.**
+### 2. ~~Visibility: simple transparency, or the stronger cryptographic one (blind signatures)?~~ — **Decided, then revised same night: neither, exactly. Category-level visibility plus a safety blocklist.**
 *From: Scope_Presence_Ownership.md*
-The harder, structural guarantee over the faster promise-based one — consistent with the recovery decision above. Worth being direct about the real cost: this changes how the identity service issues tokens from the ground up, and it's meaningfully more engineering than anything else scoped so far. Design it in from the start of Phase 1 — retrofitting this after the simpler version ships would mean rebuilding the token-issuance logic, not extending it.
+Not blind signatures after all — that would mean Atlas can't see the destination even in category form, which conflicts directly with the safety requirement below. Instead: Atlas can see the destination URL/IP and classify it into a small set of categories (bank, airline, home), nothing more granular, plus a real blocklist for known dark web and terrorist-affiliated destinations. Worth being honest this is a real, deliberate walk-back of the stronger privacy guarantee — a genuine tradeoff, not a free upgrade.
 
 ---
 
@@ -83,4 +83,4 @@ If it's tight, upgrading from the current $4–6/month droplet to the next size 
 - Public-key verification, not a shared secret, is the right technical approach regardless of how open or closed registration stays.
 - Token signing algorithm: ES256.
 - Recovery: a portal checking a self-held recovery phrase, generated once at registration. No company-dependent safety net, by design.
-- Visibility: blind signatures, designed in from the start of Phase 1 — Atlas structurally cannot see which relying party a token gets used at, not just promises not to look.
+- Visibility: category-level only (bank, airline, home, and so on) — not full blind signing. Atlas sees enough to enforce a real safety blocklist against dark web and terrorist-affiliated destinations; nothing more granular than the category.
