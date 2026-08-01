@@ -25,7 +25,7 @@
 
 **Operational documentation (in `ops/`):** `KB-Device-Onboarding-Flow.md`, `Runbook-OIDC-Setup.md` — these stay as separate reference playbooks, not status; they don't change often and aren't part of the "one thing to update."
 
-**Declared-origin routing test (Toronto/London exit-node experiment):** attempted twice, not yet proven — but the second attempt narrowed the problem precisely, real progress even without a working result.
+**Declared-origin routing test (Toronto/London exit-node experiment):** SOLVED and confirmed live. Root cause was a missing ACL permission (the policy never granted internet access through an exit node), not any infrastructure problem — full detail below.
 
 *First attempt:* London was the traveler (consuming an exit node), not the provider. It locked itself out of both the Web Console and direct SSH the moment the exit-node route was applied — destroyed and rebuilt as a result.
 
@@ -53,7 +53,17 @@
 
 **Concrete next steps, in order of promise:** (1) capture on London's `eth0` simultaneously with `tailscale0` during a live Toronto ping, to see whether packets ever cross from the tunnel interface to the physical one, narrowing the gap further than today's tests did; (2) search specifically for known Tailscale exit-node issues with DigitalOcean's networking stack, now that the symptom is precise enough to search for accurately; (3) consider testing exit-node routing between two droplets on the *same* provider region, removing cross-datacenter networking as a variable entirely.
 
-**What's confirmed solid and needs no further rework:** all four nodes (Mac, Toronto, London, NY) are correctly configured — registered, forwarding enabled, routes approved. Today's session, despite ending without a working result, ruled out eleven distinct possible causes with direct evidence each time, not assumption. That's real, valuable, precise diagnostic work — the next session starts from a genuinely narrow, well-defined question, not from scratch.
+**What's confirmed solid and needs no further rework:** all four nodes (Mac, Toronto, London, NY) are correctly configured — registered, forwarding enabled, routes approved. Today's session ruled out eleven distinct possible causes with direct evidence each time, not assumption.
+
+## SOLVED, same day — the declared-origin proof is real, tested, and confirmed
+
+**The root cause: the ACL policy written two nights ago for context isolation never granted any group permission to reach the internet through an exit node.** Every check run today on NAT, forwarding, firewalls, and routing tables was correctly ruled out — none of it was ever the problem. Headscale's policy engine was simply never told this traffic was allowed at all, and quietly dropped it every time, which is exactly why packets left the consuming node's tunnel interface but never arrived anywhere.
+
+**The fix:** one new rule added to `acl.hujson`, granting `group:personal` access to `autogroup:internet:*` — Headscale's documented mechanism for this exact permission. Backed up the original file first, validated the new one with `headscale configtest` before restarting anything, restarted Headscale, then reconnected Toronto to London as its exit node.
+
+**The result, confirmed live:** `curl -4 https://icanhazip.com` from Toronto, routed through London, returned `144.126.200.88` — London's address, not Toronto's own. Real ping traffic to `1.1.1.1` succeeded with zero packet loss. This is the actual, complete proof the declared-origin concept works — not simulated, not partial, run and confirmed on real infrastructure.
+
+**Worth remembering for every future context (`employment`, `pseudonymous`) that needs this same capability:** each one needs its own equivalent `autogroup:internet:*` rule added explicitly — this fix only covered `personal`, on purpose, matching what was actually being tested.
 
 **What was tried today, in order, none of which fully resolved it:** quitting and reopening the Tailscale app (no change — traffic only flows once the exit node is disconnected entirely); a full system restart was recommended as the next step, matching the fix that worked in the GitHub report for another user, but the symptom then shifted to the connection dropping immediately rather than staying up without passing traffic — worth treating as a related but distinct data point, not assumed to be the same failure.
 
