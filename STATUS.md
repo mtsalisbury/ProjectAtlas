@@ -30,7 +30,12 @@
 5. ✅ Access lock — token-gated backend + login screen, verified live
 6. ✅ H5 test — device recovery, verified live on real hardware, full reconnect loop confirmed
 7. 🔄 ACL isolation — reframed as "no involuntary crossing," formal test deferred pending design of user-controlled bridging
-8. ⬜ Deployment — real subdomain + HTTPS for the dashboard (currently mesh-IP-only)
+8. ✅ Deployment — dashboard containerized and live at `https://dashboard.rpnwireless.com` with a valid Let's Encrypt cert, matching the existing `headscale`/`caddy`/`bank-demo` pattern (same `docker-compose.yml`, same Caddy auto-TLS). Old systemd instance (bound to `100.64.0.8:8000`) retired and disabled — the containerized version is now the only live instance.
+
+**Deployment notes for future reference:**
+- Dashboard container needs the Docker socket mounted (`/var/run/docker.sock`) and the Docker CLI installed in its image, since it shells out to `docker exec headscale ...` to read mesh state. This is a deliberate, accepted tradeoff for a single-admin, token-gated internal tool — not something to casually replicate for anything more exposed.
+- Log directory (`/opt/atlas-dashboard/logs`) is bind-mounted from the host into the container so H6/exit-node/H5 run logs persist across container rebuilds and match the host's existing log history.
+- After any Caddyfile edit, Caddy does not auto-reload — run `docker exec caddy caddy reload --config /etc/caddy/Caddyfile` explicitly.
 
 ---
 
