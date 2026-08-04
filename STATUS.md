@@ -141,6 +141,16 @@
 - Hiding the underlying Tailscale/Headscale machinery inside a real branded app — technically achievable, real ongoing engineering work.
 - Onboarding without manual admin approval (OIDC) — fully scoped in the runbook, not yet executed.
 
+## Part 3.5 — New Scoped Item: Atlas Client Agent
+
+**The gap:** Atlas currently has an admin-facing surface (the dashboard) but no end-user-facing surface. The person actually living inside a Presence today has to use the stock Tailscale app, whose settings (like allowing local network access while an exit node is active) are buried, non-obvious, and meaningless to someone who isn't a network engineer. Someone using Atlas day-to-day can't currently even see what's "on" for them, let alone control it in a way that matches how Atlas thinks about identity and context.
+
+**The real fix, not a workaround:** a native Atlas client agent — not the stock Tailscale/Headscale client — that surfaces Presence identity, current context, and rule state (including things like bridge profiles, once built) in a UI a non-technical person can actually understand and control. This is the natural client-side counterpart to the admin dashboard, and closes the loop on "presence, not just a VPN" as a real, lived experience rather than an admin-only concept.
+
+**Scope note:** this is a real, substantial build — not a quick toggle. It means writing and maintaining client software (likely wrapping or replacing the Tailscale client relationship entirely over time), not just a policy file. Deliberately logged here as a future roadmap item, not something to start today.
+
+---
+
 ## Part 4 — Suggested Order, Next Time
 
 1. **Solve independent relying-party trust** — how a real, outside service could trust an Atlas Presence without a hand-configured shared secret. This is now the single most important open question in the whole project.
