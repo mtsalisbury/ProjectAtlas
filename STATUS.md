@@ -6,6 +6,36 @@
 
 ---
 
+## Part 0 — August 4 Session: Live Admin Dashboard, Access Lock, H5 Proven on Real Hardware
+
+**A working, token-gated admin dashboard now exists and is live at `http://100.64.0.8:8000` (mesh-only, not public yet).** Built as a FastAPI backend (`main.py`, `headscale.py`, `h6_test.py`, `exit_test.py`, `h5_test.py`) serving a single-page frontend styled to Project Atlas branding (dark navy/gold, Space Grotesk + IBM Plex Mono). This turns the hypothesis tests from one-off SSH/manual proofs into repeatable, one-click, logged tests.
+
+**What the dashboard does, confirmed live today:**
+- **Live mesh topology view** — every node, context, online/offline status, IP addresses, routes, last-seen, pulled straight from `headscale nodes list --output json`.
+- **H6 panel** — two-button snapshot/compare flow with a detail modal, wired to the same server-side logic already proven in Paper 002. Now has a real UI, not just a server-side proof.
+- **Exit-node check panel** — select an exit node, run a live check against known egress IPs (London `144.126.200.88`, Toronto `134.122.41.187`), pass/fail with full detail view.
+- **Access lock, built and verified end-to-end today:**
+  - Backend token check via `X-Atlas-Token` header on every `/api/*` route (401 without it, 200 with it) — confirmed.
+  - systemd bound to the mesh IP (`100.64.0.8:8000`) instead of `127.0.0.1` — no more SSH tunnel required, reachable directly over the mesh.
+  - Frontend login overlay ("ATLAS ADMIN — LOCKED") gating all API calls through an `authFetch` wrapper — confirmed working in-browser.
+- **H5 (device recovery) — proven today on a real device, not a test node.** Added `expire_node()` to the Headscale wrapper (`headscale nodes expire -i <id>`) and a new `h5_test.py` that snapshots the full mesh before/after expiring a target node, asserting every *other* node's online status, IPs, and context are unchanged. Ran it against a real iPhone in the `personal` context: **passed** — other devices unaffected, iPhone cleanly expired. Confirmed the *full* recovery loop too: the iPhone needed its Tailscale client re-pointed at the correct custom coordination server (`https://mesh.rpnwireless.com` — stock Tailscale app defaults to Tailscale's own servers, not Headscale, which produced an unrelated 401 at first), then `headscale auth register --auth-id <id> --user personal` from the server side, then reconnected successfully. This is a genuinely stronger H5 result than the earlier version — it proves the full real-world recovery path, not just the isolation guarantee.
+
+**Architectural refinement — ACL isolation model clarified (see Part 2 for the permanent principle):** Isolation between contexts is **default-isolated, user-controlled**, not absolute. The mesh should prevent *involuntary* crossing between contexts (inference, leakage, third-party visibility) — it isn't meant to lock the identity owner out of their own resources, since all contexts belong to the same person choosing to present differently, not to adversaries. This reframes the planned ACL isolation test: it should validate "nothing crosses without deliberate user action," not "nothing can ever cross." Building a formal test for this is deferred, pending a clearer definition of what deliberate cross-context bridging should look like.
+
+**Updated roadmap status:**
+1. ✅ Scaffold API, Headscale wrapper, topology endpoint
+2. ✅ H6 test — dashboard panel, live
+3. ✅ Exit-node test — dashboard panel, live
+4. ✅ Frontend styled to Atlas branding
+5. ✅ Access lock — token-gated backend + login screen, verified live
+6. ✅ H5 test — device recovery, verified live on real hardware, full reconnect loop confirmed
+7. 🔄 ACL isolation — reframed as "no involuntary crossing," formal test deferred pending design of user-controlled bridging
+8. ⬜ Deployment — real subdomain + HTTPS for the dashboard (currently mesh-IP-only)
+
+---
+
+---
+
 ## Part 1 — What's Actually Built and Working
 
 **Infrastructure (real, live, tested):**
@@ -78,6 +108,8 @@
 - **This is a controlled package, not an open internet standard.** Atlas decides which relying parties participate, indefinitely — not a stepping stone toward eventually opening to anyone. Public-key verification (over a shared secret) is still the right technical approach even inside this closed model — that's an engineering choice, separate from who's allowed to be a relying party at all.
 - **Presence gets shared. Data doesn't.** A relying party attests that a Presence is valid; another relying party trusts that attestation. The underlying credential — the actual passkey — never crosses between them, the same way a government checking your bank's "yes, this is a real person" never sees your account details.
 
+- **ACL isolation is default-isolated, user-controlled — not absolute.** Contexts (personal / employment / pseudonymous) don't reach each other over the mesh by default. This exists to prevent *involuntary* crossing — inference by a third party, leakage through shared infrastructure, an employer or relying party gaining visibility into another Presence without consent. It is not meant to lock the identity owner out of their own resources: the person controls when and how their own contexts bridge, since they're the same underlying identity choosing to present differently, not adversaries to one another. Any future isolation test should validate "nothing crosses without deliberate user action," not "nothing can ever cross."
+
 ## Part 3 — Presence: What's Actually Offered, By Evidence Tier
 
 *Updated tonight. This section moves items between tiers only when something is actually tested — never because it would be convenient to believe it's ready.*
@@ -85,13 +117,15 @@
 ### Tier 1 — Tested and proven
 
 - **An identity that survives switching networks.** Proven (H6).
-- **Clean device recovery** without disturbing other devices. Proven (H5).
+- **Clean device recovery** without disturbing other devices. Proven (H5) — and as of August 4, proven on real hardware (a live iPhone) through the full expire-and-reauthenticate cycle, not just a test node.
 - **Enforced separation between different people's Presences.** Proven — found broken first, then fixed, then re-verified.
 - **A real relying party recognizing a person instead of a network.** *New as of tonight.* A working demo bank page, using a real passkey tied to a Presence, correctly ignored a simulated "new network" block that stopped the old-fashioned login path cold. Server-tested and confirmed by an actual passkey ceremony on a real device — not simulated.
 - **A second relying party recognizing the same Presence without a new passkey.** This directly answers last night's open question — a bare, site-locked passkey cannot do this by design; Atlas can, and it's now proven, not just argued.
 - **A visible signal for whether a site supports Presence**, confirmed switching correctly between an active demo site and unrelated real sites.
 
 ### Tier 2 — Built, working, not yet proven at real scale
+
+- **A live, token-gated admin dashboard** for running these tests on demand, with full audit logging (JSONL) of every run.
 
 - Separate contexts for different parts of a life, existing as real namespaces.
 - The mesh network itself, self-hosted, under your own control.
