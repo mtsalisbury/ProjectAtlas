@@ -170,6 +170,25 @@ The home-based-remote-access variant appears categorically different — the dev
 
 ---
 
+## Part 3.8 - Basic Presence Backend: First Real Provisioning Pipeline (August 4)
+
+**This is the first genuinely working, non-fake backend behind the Presence questionnaire.** Built and verified end to end via curl against the live dashboard API:
+
+- New SQLite database (db.py) - users table (email, hashed password, per-user token, linked Headscale username) and personas table (the five questionnaire answers, matched exit node, timestamp)
+- New presence_provision.py - creates a real Headscale user per signup, safely adds them to the group:personal ACL group (validate with headscale configtest before writing, same pattern as the manual Toronto-London fix), restarts Headscale, and matches their stated home location to the nearest existing exit node
+- New routes on the dashboard API: POST /api/presence/signup, POST /api/presence/login, POST /api/presence/provision, GET /api/presence/status - all separated from the admin token middleware, since these need per-user auth (X-Presence-Token header), not the admin ATLAS_TOKEN
+- Verified live: a real signup created a real Headscale user (presence-user-1), correctly added to group:personal in acl.hujson, Headscale restarted cleanly, exit node correctly matched to Toronto based on the Q3 answer, and the full persona was readable back via the status endpoint
+
+**Deliberate simplification, per decision made the same day:** Q4 ("how do you want to be presented") is cosmetic for now - every real signup is provisioned into group:personal regardless of which Q4 answer they pick. The "employment" group is being treated as a reserved placeholder, not a real capability, until there is a real reason (like a company formally adopting Atlas) to build it out properly.
+
+**Exit node matching is a simple keyword placeholder, not real geo-routing.** Only Toronto and London exist as real exit nodes today; everything that does not match a known keyword defaults to Toronto. This is a known, accepted limitation - not a bug - until more regional exit nodes exist.
+
+**Known real gap, not yet solved:** the backend can now correctly grant permission for a user to route through their matched exit node, but nothing yet tells their actual device to select and use that exit node. That selection is currently a manual, client-side action (the stock Tailscale app). Closing this gap fully depends on the future Atlas client agent (see Part 3.6 client agent principles) - this is expected, not an oversight.
+
+**Not yet wired to the frontend.** The presence.html questionnaire prototype still uses fake local JavaScript state for its summary and Lens screens. The next real step is connecting its "Build my Presence" action to POST /api/presence/provision, and its Lens screen to GET /api/presence/status, so the whole flow becomes real rather than a demo.
+
+---
+
 ## Part 4 — Suggested Order, Next Time
 
 1. **Solve independent relying-party trust** — how a real, outside service could trust an Atlas Presence without a hand-configured shared secret. This is now the single most important open question in the whole project.
