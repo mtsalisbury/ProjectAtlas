@@ -160,6 +160,16 @@
 
 ---
 
+## Part 3.6 — Flagged for Future Ethics/Legal Review: Remote Access to Company-Owned Devices
+
+**Not scoped, not approved, not to be built without review.** During design discussion on August 4, a scenario came up: a company-issued laptop remains physically at the employee's home (its true, accurate location), while the employee travels with a personal device and wants to remotely access or route through that home-based company laptop. This was distinguished clearly from a rejected scenario — using Atlas to override or mask a company device's *actual* location from the company — which was explicitly ruled out as something Atlas should not build a feature around, given real legal and policy concerns (tax residency, data residency, export controls, employment/acceptable-use agreements, and the likelihood that concealment itself would violate employer policy).
+
+The home-based-remote-access variant appears categorically different — the device's real location is never misrepresented, only accessed remotely — but the line between "legitimate remote access" and "tooling that could enable location concealment" deserves real scrutiny before anything here becomes a supported Atlas capability or product offering (including any adjacent idea like a sellable remote-KVM product). This should go through a proper ethical and legal review — not a solo engineering decision — before any related feature is scoped, designed, or built.
+
+**Also flagged the same day, same category (needs real legal review before action, not a technical decision):** open-sourcing parts of Atlas so others can extend it. Mike wants the option to open this up, while retaining rights and explicitly not being responsible for what others build with it outside Atlas's own intentions — needs an actual license choice and liability review, not a default GitHub license picked casually.
+
+---
+
 ## Part 4 — Suggested Order, Next Time
 
 1. **Solve independent relying-party trust** — how a real, outside service could trust an Atlas Presence without a hand-configured shared secret. This is now the single most important open question in the whole project.
