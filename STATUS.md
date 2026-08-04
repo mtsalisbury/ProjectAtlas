@@ -176,3 +176,12 @@ The home-based-remote-access variant appears categorically different — the dev
 2. OIDC provider decisions — cheap to decide, unlocks admin-free onboarding.
 3. The desktop zero-touch script — real, achievable quickly.
 4. Outreach — you now have two rounds of real, tested proof, not just documents.
+
+## Part 3.7 - Tracked, Not Yet Done: Shared Brand Source
+
+The problem: logo and font drift has happened more than once - the dashboard and early prototypes used a plain concentric-circles SVG mark with a navy/brass palette, while the real live public site (mtsalisbury.github.io/ProjectAtlas) uses a different, canonical treatment: indigo-violet rounded badge with white double-ring icon, light background (#fafafc), deep navy ink, Space Grotesk headers, indigo-violet accent (#5659dd).
+
+Confirmed canonical, August 4 (verified against a live screenshot of the real site): the concentric-circles mark IS correct - it just needs the accent color fixed to indigo-violet, not brass. The Avenix logo is not actually live anywhere and should be treated as retired.
+
+Not yet done: pull the logo SVG, font imports, and color tokens into one shared file (e.g. brand.css or similar) that every surface - public site, admin dashboard, the Presence questionnaire/Lens flow, and any future surface - references or copies from, so this drift cannot happen again. Tracked here so it is not lost; not blocking other work.
+
