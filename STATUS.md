@@ -149,6 +149,15 @@
 
 **Scope note:** this is a real, substantial build — not a quick toggle. It means writing and maintaining client software (likely wrapping or replacing the Tailscale client relationship entirely over time), not just a policy file. Deliberately logged here as a future roadmap item, not something to start today.
 
+**Core principles, worked out August 4 — worth preserving exactly:**
+
+- **Presence is singular, not per-device.** It's the same Presence whether you're on a MacBook, iPhone, iPad, or anything else in the toolbox — the device is just the current vessel, not a separate identity.
+- **A client agent's job on any device is twofold:** (1) establish the VPN/mesh connection itself, and (2) apply the rules that represent *you* in that moment — current context, path/exit-node selection, active bridge profiles. The agent doesn't hold its own separate copy of truth; it represents the one real Presence.
+- **The admin portal is the sole source of authority** — direct read/write access to everything (contexts, rules, bridge profiles). No ambiguity about where truth lives.
+- **Client agents are viewers first, with control layered on top** — they let a person see what's actually configured for them right now. Critically, this should be reviewable **offline** — a person can check their own Presence status without requiring a live connection — then reconcile/sync once connectivity returns, rather than treating connectivity as a precondition for visibility.
+- **Mobile-first, not desktop-first.** Many real people only have a phone or tablet, never a computer. Full Presence visibility and control cannot require a computer — that would make Atlas a tool for engineers only, contradicting the actual point of a *personal* internet presence for *people*, not just technical users.
+- **Sequencing note:** the backend/VPN groundwork (mesh, ACLs, access lock, H5/H6, exit-node routing) was correctly built first — you need real, provable infrastructure before designing a client experience around it. But the client-agent/Presence-visibility layer is not a "nice to have" bolted onto that — it's arguably closer to the actual thesis of Personal Internet Presence than the admin tooling is. The engine came first; the client agent is the dashboard for the actual driver, not the mechanic. Both are required; this layer has been under-prioritized relative to its real importance and should move up in planning going forward.
+
 ---
 
 ## Part 4 — Suggested Order, Next Time
