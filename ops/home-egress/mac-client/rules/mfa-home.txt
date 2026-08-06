@@ -16,3 +16,12 @@
 # domain — that traffic can't be isolated this way, only the app's direct
 # API/sync calls can. Worth testing each entry once added, rather than
 # assuming it's fully covered.
+
+# TD — both TD Bank (US) and TD Canada Trust. Both banks' online banking
+# now live under td.com (TD Canada Trust's old tdcanadatrust.com domain
+# consolidated here); tdbank.com is the separate US retail banking domain.
+# Not personally verified against a live login yet — confirm these are
+# actually what your browser shows in the address bar during a real
+# login, then remove this note.
+td.com
+tdbank.com
