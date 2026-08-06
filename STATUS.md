@@ -2,7 +2,129 @@
 
 **This is the one file to update.** Everything about where the project stands lives here now — not spread across separate documents. If something changes, it changes here, in the relevant section below, nowhere else.
 
-**Last updated:** July 30, 2026
+**Last updated:** August 5, 2026
+
+---
+
+## Part 0.1 — August 5 Session: The Client Tail — Enrollment, Lens, Real Questionnaire
+
+**The two gaps named at the end of Part 3.8 are now closed in code.** Part 3.8 ended with two explicit admissions: the questionnaire frontend "still uses fake local JavaScript state," and "nothing yet tells their actual device to select and use that exit node." Both are now built, and tested against a stubbed Headscale with 59 assertions passing.
+
+**New: `enrollment.py`** — the Headscale wrapper that ties a client device to the mesh. Same `docker exec headscale ...` pattern as `headscale.py`/`presence_provision.py`, no new dependencies.
+- `create_preauth_key()` — single-use and 1-hour by default. A reusable key is a standing invitation to join someone's Presence; that has to be a deliberate choice, never a default.
+- `register_node()` + `normalize_node_key()` — mobile path. Accepts the full registration URL, a bare key, a `nodekey:`-prefixed key, or any of those with stray whitespace/uppercase. Refusing to parse a pasted URL is a self-inflicted support ticket.
+- `build_enrollment_instructions()` — generates the real per-platform command **server-side**, so the coordination-server URL and exit-node name can't drift out of sync with what the mesh actually has. This directly guards against the failure recorded in the Aug 4 H5 run, where the stock Tailscale app defaulting to Tailscale's own servers surfaced as a confusing 401.
+
+**New: `presence_enroll_api.py`** — an `APIRouter` adding five client routes: `POST /api/presence/enroll`, `POST /api/presence/enroll/mobile`, `GET /api/presence/enroll/keys`, `POST /api/presence/enroll/revoke`, `GET /api/presence/lens`. All authenticate with `X-Presence-Token`, never the admin `ATLAS_TOKEN`.
+
+**`main.py` — two lines only.** An import, and `app.include_router(...)` placed **above** `app.mount("/", StaticFiles(...))`. The catch-all static mount silently swallows any route registered after it; the deploy script verifies this ordering before it will push, and verifies `/api/presence/lens` returns 401 (not 404) afterwards.
+
+**`static/presence.html` — the fake state is gone.** The prototype's `state` object and `populateLens()` local-render are replaced with real calls: "Build my Presence" now POSTs to `/api/presence/provision`, and the Lens renders from `GET /api/presence/lens`. Two new screens (auth, enrollment) were appended to the existing `screens` array rather than prepended, so the existing `welcome=0 / q1=1 … q5=5` indices the inline `onclick` handlers depend on stay valid. Original CSS and question wording untouched.
+
+**The Lens now reports honestly rather than optimistically.** It shows the matched exit node *and* whether that node is actually online *and* whether its `0.0.0.0/0` route was ever approved. Naming a matched exit node without those two checks would be a false green light — precisely the class of error that cost a full day of debugging on Aug 3 before the missing `autogroup:internet:*` ACL rule was found.
+
+**Verified by test, not by assertion (59/59 passing).** Notable cases, run against a stub emulating the real Headscale CLI surface:
+- Enrollment *before* provisioning returns a clean 409 with a human message, not a 500.
+- The Lens returns 200 and renders even when the mesh is unreachable — matching Part 3.5's principle that visibility must not require connectivity.
+- `q3` (home address) correctly drives exit-node matching: "London, United Kingdom" → `EGR-Lon1`, "Toronto, Ontario" → `EGR-Tor1`.
+- The ACL rewrite preserves pre-existing group members *and* the `autogroup:internet:*` rule.
+- **Isolation holds between two real Presences**: each sees only its own device, no overlap, and a client token gets 401 from `/api/topology`.
+- Full pre-auth keys are never returned by the list endpoint — only an 8-character prefix.
+
+**Honest limits — what this does NOT do:**
+- **Mobile is still not zero-touch, and the code says so out loud** (`zero_touch: False`). Part 2's finding stands and was not re-litigated. What changed is that the *administrator* is out of the loop: previously someone had to reach Mike so he could run `headscale nodes register` by hand; now they paste the link their own app already shows them. One-paste and self-service, not zero-touch.
+- **Nothing here verifies the device actually selected the exit node.** The desktop command includes `--exit-node=`, and the Lens reports whether the egress is healthy — but confirming real traffic is leaving via that egress still needs the existing exit-node test panel. The client tail issues the instruction; it does not yet prove compliance.
+- **Not deployed as of this writing.** `deploy-enrollment.sh` is written, syntax-checked, and does backup → copy → rebuild → health-check → automatic rollback, but has not been run.
+
+**Flagged, not fixed — `db.py` password hashing is weak.** `hash_password()` is a single round of unsalted-construction SHA-256 (`sha256(salt + password)`). It is fast by design, which is exactly wrong for password storage — a commodity GPU tries billions of these per second. For a solo demo with test accounts this is not urgent; before any real person creates an account it should move to `bcrypt`, `scrypt`, or `argon2id`. Logged here rather than changed, since it touches existing working auth and wasn't in scope tonight.
+
+---
+
+## Part 0.2 — August 5 Session, Second Build: Route Path Selection
+
+**Declared origin is now a control, not an assignment.** Before this, `match_exit_node()` did a one-time keyword match against the home address at signup, and that egress was permanent. A traveler — the entire use case — could not re-declare where they appeared from. That's now fixed: a person changes their declared origin from the Lens, at will.
+
+**New: `routing.py`**
+- `list_exit_nodes()` discovers egress **live from Headscale**, filtering to nodes with an approved `0.0.0.0/0` route. Deliberately not read from the hardcoded `EXIT_NODE_MAP` keyword table — adding a droplet in a new region should make it selectable without a code change, and a stale list would either hide real capacity or offer egress that no longer exists.
+- `resolve_path()` **rejects an offline egress with a readable message**, rather than accepting it. Letting someone select a dead exit node would reproduce exactly the symptom that cost a full day on Aug 3: a connection that looks established but passes no traffic.
+- `build_switch_command()` emits `tailscale set` rather than `tailscale up` — changes one setting on a live connection instead of re-running the login flow, so it won't prompt for re-auth. It includes `--exit-node-allow-lan-access` by default, because Part 3.5 names that setting specifically as "buried, non-obvious, and meaningless to someone who isn't a network engineer." Without it, choosing an exit node silently kills printers and NAS access and the person has no idea why.
+- **"Where I actually am" is a first-class option**, not the absence of one. Presenting honestly is a legitimate choice, and a null exit node is now visibly distinct from an unset one.
+
+**New routes:** `GET /api/presence/paths` (live options, current marked, offline shown-but-disabled rather than hidden), `POST /api/presence/path` (change origin, returns a plain-language summary and the command to apply), and `GET /api/presence/enroll/mobile-steps`.
+
+**`db.py`:** new `path_history` table plus `set_persona_exit_node()`, `record_path_change()`, `get_path_history()`. Persona rows are **updated in place** rather than duplicated — the questionnaire answers didn't change, only the presentation; the audit trail belongs in `path_history`. `get_latest_persona()` now orders by `id` rather than `built_at`, since two rows written in the same second were previously ambiguous and "latest" has to be exact.
+
+**Bug caught and fixed during this build:** clicking the mobile tab was minting a fresh pre-auth key every time — a credential the mobile flow can't even redeem. Split out to a GET endpoint that renders instructions without issuing anything.
+
+**Tested: 53 new assertions, plus the 59 enrollment assertions re-run green (112 total).** Notable cases: switching London→Toronto→direct→London persists correctly and the Lens reflects each change; an unknown egress and an offline egress both return 400 with a human-readable reason; **rejected attempts write no history**, because a change that was refused is not a change and polluting the audit trail would make it useless as a record; two Presences keep entirely separate paths and histories; questionnaire answers survive path changes untouched.
+
+**Migration verified against a simulated live database**, not just a fresh one: an old-schema DB seeded with a real user and persona was run through the new `init_db()` — user survived, persona survived, `path_history` added, original answers untouched. `CREATE TABLE IF NOT EXISTS` means the deploy is safe against the existing `atlas.db`, and the script's `cp -a` backup captures the database alongside the code.
+
+**Honest limit, unchanged and worth restating:** Headscale **cannot push** an exit-node selection to a client — that is a client-side Tailscale setting; the coordination server grants permission to route, it does not dictate the route. So this API is authoritative about *intent* and returns the command that applies it; the device still performs the switch. The endpoint is deliberately shaped for the future native client agent (Part 3.5) to consume, so that agent won't need a different contract when it arrives — it will simply apply the change itself with nothing to paste.
+
+**Caught before deploy — Headscale v0.29.3 requires numeric user IDs.** A pre-flight check against the live server (rather than trusting the stub) surfaced a real incompatibility:
+
+```
+docker exec headscale headscale preauthkeys create --user presence-user-1 --expiration 1h
+Error: invalid argument "presence-user-1" for "-u, --user" flag:
+strconv.ParseUint: parsing "presence-user-1": invalid syntax
+```
+
+Every `--user` flag on this version wants the numeric ID, not the name — while `headscale users create <name>` still takes a name, which is why provisioning worked on Aug 4 and enrollment would have failed. Four call sites were affected: `preauthkeys create`, `preauthkeys list`, `preauthkeys expire`, `nodes register`.
+
+Fixed with `resolve_user_id()` (name → ID via `users list --output json`, cached) plus `_headscale_for_user()`, which tries the ID form first and falls back to the name form. Older Headscale wanted names, so this survives a downgrade without a code change. **The test stub was then corrected to reproduce the real v0.29.3 error**, and both suites re-run green against it — plus a third run against a simulated name-only server to prove the fallback. Had the stub not been corrected, the tests would have kept passing against behaviour the real server doesn't have.
+
+Live user IDs for reference: `personal`=1, `employment`=2, `pseudonymous`=3, `employment-other-person-test`=4, `presence-user-1`=6.
+
+**Also fixed pre-deploy: exit nodes are now selected by mesh IP, not name.** `--exit-node=EGR-Tor1` depends on MagicDNS being enabled, which is optional on Headscale and often off, and names get normalised (`EGR-Tor1` → `egr-tor1`). The `100.64.x.x` address is unambiguous. The friendly name still appears in the explanation text, since an IP means nothing to a person reading it.
+
+**Still not deployed.** Both builds are staged in `atlas-dashboard-src/`, awaiting `./deploy-enrollment.sh`. Test count: **114 assertions** (60 enrollment + 54 path).
+
+---
+
+**Environment note for future sessions:** SSH from the Cowork sandbox to the droplets is not possible — that environment has no network interface and reaches the world through a domain-allowlisted proxy, which returns `Forbidden` for `192.241.147.167:22` and `mesh.rpnwireless.com:22` while allowing `github.com:22`. Source has to be copied into the connected folder (`scp -r root@... ./atlas-dashboard-src`) for editing, then deployed from the Mac. Claude Code running in a terminal on the Mac itself would not have this limitation.
+
+---
+
+## Part 0.3 — August 5 Session, Evening: Go-Live Runbook, Lens Honesty Fix, PWA, Toronto Rebuild
+
+**Ran the Client Tail Go-Live runbook (`ops/Runbook-Client-Tail-GoLive.md`) against the real, live server.** Step 1 (deploy) turned out to have already happened in an untracked prior moment — the enroll/paths routes answered live with real data before any deploy was run tonight. Step 2 (API smoke test) passed cleanly: signup, provision (real Headscale user `presence-user-2`, real ACL restart), paths, and enroll-key generation all returned exactly what the runbook expected.
+
+**A genuinely new, better-isolated finding: the Mac itself cannot consume *any* exit node — this was very likely never actually true before either, despite reading as solved.** Re-tested declared-origin switching directly on the Mac (Step 3), and it failed the same way for both London and NY, even after a full `tailscale down`/`up` cycle to rule out a stale WireGuard session. Diagnosis, in order:
+- ACL confirmed still correct (`group:personal` → `autogroup:internet:*`, the Aug 3 fix is intact, not a regression).
+- London's NAT, forwarding, UFW, and rp_filter all checked out correct — and London was *simultaneously* forwarding Toronto's real traffic to `8.8.8.8` and back throughout the test.
+- `tailscale ping` from the Mac to London succeeded directly (87ms) — the peer-to-peer tunnel itself is healthy.
+- Packet capture on London during a live attempt showed WireGuard handshake traffic arriving from the Mac's public IP, but **zero decapsulated packets from the Mac's tunnel address (100.64.0.4) ever appeared** — the data plane specifically for the Mac's own traffic never comes through, even though the control-plane handshake does.
+- On the Mac's own side: `route get`, interface counters, and the local routing table all confirm outbound traffic *is* correctly entering the tunnel interface (`utun12`) — hundreds of packets sent during a test window, almost none returned.
+- Swapping the exit node from London to NY (`atlas-mesh`, the control-plane server, otherwise flawless) reproduced the identical failure — ruling out any specific droplet and pointing at the Mac (or its current network) as the common factor.
+- `tailscale netcheck` was clean this time — no `FetchRIB` error — so this isn't necessarily the same signature as the previously-tracked `tailscale/tailscale#3299`, though it may be related.
+
+**The correction this forces on the record: the "SOLVED, same day" proof earlier in this document was run with Toronto as the traveling client, never the Mac.** That proof stands — Toronto-as-client through London is real, confirmed, and reconfirmed again tonight. But "the Mac can select an exit node and get real routed traffic" has apparently never actually been demonstrated in this project. This is now a real, open, reproducible bug, isolated far more precisely than before — not a re-run of old ground.
+
+**Found and fixed a real honesty gap in the Lens itself.** While diagnosing the above, `headscale nodes list-routes` showed Toronto's exit route as `Approved` but with `Available`/`Serving` both blank — its own `tailscaled` wasn't currently advertising the route it was approved for. `/api/presence/paths` and `/api/presence/lens` were reporting Toronto as a healthy option anyway, because `headscale.py` only ever read Headscale's `approved_routes` field and never looked at `subnet_routes` (what's actually being served right now). Fixed:
+- `headscale.py` now also captures `subnet_routes` as `serving_routes`.
+- `routing.py` gained `_is_serving_exit_route()`; `list_exit_nodes()` and `resolve_path()` now require a route to be both online *and* actually serving before calling it available, with a distinct error message when a node is online-but-not-serving versus genuinely offline.
+- `enrollment.py`'s `get_exit_node_info()` and the `/api/presence/lens` response both gained an `exit_route_serving` field alongside the existing `exit_route_approved`.
+- `static/presence.html` now shows a third pill ("route serving" / "route not serving") in the Lens header, and the path picker distinguishes "offline" from "approved but not currently serving" in its unavailable-reason text.
+- Deployed and verified live: Toronto correctly shows `serving_route: false, available: false` post-fix; London and NY both show `true`.
+
+**Built and deployed real PWA support for `presence.html` — installable on a phone home screen with no app store, no review.** Generated a proper icon set (`icon-192.png`, `icon-512.png`, `apple-touch-icon.png`, `favicon-32.png`) from the existing canonical double-ring brand mark already inline in the page, using `qlmanage` to rasterize an SVG source (no image tooling was otherwise available) plus `sips` for resizing. Added `manifest.json` and the standard Apple meta tags (`apple-mobile-web-app-capable`, etc.). Confirmed live on a real iPhone: installed via Safari's Add to Home Screen, launches full-screen with no browser chrome. The hard platform limit stays explicit in the code comment: a web page, however installed, cannot establish or control a VPN connection — that needs `NetworkExtension`/`VpnService`, native capabilities no PWA can reach. The stock Tailscale app remains the thing that actually carries the tunnel; this is, and can only be, the visibility/control layer around it.
+
+**Found and fixed a real routing bug: `presence.rpnwireless.com` was serving a stale, disconnected prototype, not the real app.** The domain the person-facing app is actually supposed to live at was pointed by Caddy at a separate static directory (`/root/atlas-mesh/presence-site`) containing a 667-line snapshot of `presence.html` from before Part 0.1's backend wiring — the old fake-local-JavaScript-state version, with no backend behind it at all. Fixed by changing that Caddy block to `rewrite / /presence.html` + `reverse_proxy atlas-dashboard:8000`, matching how `dashboard.rpnwireless.com` is served. Verified live: `presence.rpnwireless.com/api/presence/lens` now returns a real `401` (proving it hits the actual FastAPI backend) instead of static-file behavior. The old `presence-site` directory was left in place but is now unreferenced — not deleted.
+
+**Toronto (`EGR-Tor1`) was found completely wedged, then rebuilt from scratch.** SSH was unreachable on every path tried (public IP, mesh IP, repeated) even after a graceful reboot; the DigitalOcean web console also failed to connect. Packet capture incidentally caught the likely cause: a leftover `ping` process from an earlier test session, running once a second, apparently never cleaned up, on a 512MB droplet with little headroom. A hypervisor-level Power Cycle didn't bring SSH back either, so the droplet was rebuilt from a clean Ubuntu 24.04 base image via DigitalOcean's Rebuild action (same IP and droplet ID retained, no DNS or mesh config needed to change).
+
+Reconfigured from scratch and confirmed matching London's known-working setup:
+- Old dead node entry (ID 10) deleted from Headscale before re-registering, so there's no stale duplicate.
+- Tailscale installed, registered against `mesh.rpnwireless.com` with `--advertise-exit-node --advertise-routes=0.0.0.0/0,::/0`.
+- `net.ipv4.ip_forward=1` persisted via `/etc/sysctl.d/99-tailscale.conf` (not just set for the current boot — this was almost certainly missing before and is a real candidate for why Toronto never actually served its route even when it *was* up).
+- UFW confirmed inactive, matching London.
+- Routes now show `Approved` + `Available` + `Serving` all populated in `headscale nodes list-routes` — renamed to `EGR-Tor1` (node ID 13, `100.64.0.6`).
+- Confirmed no leftover background processes on the fresh box.
+
+**Not yet proven with live third-party traffic, by deliberate choice.** London and NY can't double as test clients — Tailscale refuses to let a node be an exit-node provider and consumer at the same time (`Cannot advertise an exit node and use an exit node at the same time`), and the Mac can't be used either, since it has the separate, already-confirmed bug above that would produce a false negative regardless of Toronto's real state. Decision made: accept config-level proof for now (Toronto's setup is a structural match for London's working config) rather than force a live test today. Live verification is still owed before this gets called solved — noted here explicitly so it isn't mistaken for proven the way the Mac's exit-node path was.
+
+**`deploy-enrollment.sh`'s `FILES` array was missing `headscale.py`**, which the Lens fix above depends on — fixed, so future deploys of this area won't silently skip it.
 
 ---
 
@@ -191,10 +313,18 @@ The home-based-remote-access variant appears categorically different — the dev
 
 ## Part 4 — Suggested Order, Next Time
 
-1. **Solve independent relying-party trust** — how a real, outside service could trust an Atlas Presence without a hand-configured shared secret. This is now the single most important open question in the whole project.
-2. OIDC provider decisions — cheap to decide, unlocks admin-free onboarding.
-3. The desktop zero-touch script — real, achievable quickly.
-4. Outreach — you now have two rounds of real, tested proof, not just documents.
+0. **Deploy and live-test both builds** (`./deploy-enrollment.sh`, then: enroll one real Mac, enroll one real phone by paste, and switch declared origin Toronto↔London on a live device and confirm the egress IP actually changes). Everything below is more valuable once this is proven on hardware rather than against a stub.
+1. **Add `autogroup:internet:*` for `employment` and `pseudonymous`.** Only `personal` got it in the Aug 3 fix. Those contexts will silently drop traffic exactly the way Toronto→London did — a known landmine, cheap to defuse.
+2. **Solve independent relying-party trust** — how a real, outside service could trust an Atlas Presence without a hand-configured shared secret. This is now the single most important open question in the whole project.
+3. **Make contexts real** — Q4 is still cosmetic; every signup lands in `group:personal` regardless of answer. Per-signup ACL group generation is the multi-tenancy gap.
+4. OIDC provider decisions — cheap to decide, unlocks admin-free onboarding.
+5. ~~The desktop zero-touch script~~ — **done, Aug 5.** `build_enrollment_instructions()` emits the wrapped `--authkey` one-liner Part 2 designed but never built. Still needs a real-hardware run.
+6. ~~Route Path Selection~~ — **done, Aug 5.** See Part 0.2. Still needs a real-hardware run.
+7. Password hashing upgrade in `db.py` (see Part 0.1) — before any real person signs up.
+8. **Compliance verification** — the client tail issues `--exit-node=` and records intent, but nothing confirms traffic actually left that way. Wiring the existing exit-node test panel to a client-initiated check would close the loop between declared and actual.
+9. Outreach — you now have three rounds of real, tested proof, not just documents.
+
+**Vision note, Aug 5 — worth keeping in these words.** The sharpest one-line statement of the thesis so far: *a cell phone keeps one identity everywhere it roams, but on the internet the local ISP decides who you are.* A SIM travels; a DHCP lease doesn't. Your residency and your personal footprint shouldn't change because you went on vacation. That framing — Atlas as the SIM for the internet layer, supporting the remote user's ability to control and protect themselves — is now written into the client UI copy directly, and reads better than any of the earlier "person-controlled presence layer" phrasings.
 
 ## Part 3.7 - Tracked, Not Yet Done: Shared Brand Source
 
