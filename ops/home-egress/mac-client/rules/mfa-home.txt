@@ -26,15 +26,17 @@
 td.com
 tdbank.com
 
-# BMO, RBC, Scotiabank, CIBC — Canadian big-five banks (minus National
-# Bank), added the same way as TD: base domain only, since domain_suffix
+# BMO, RBC, Scotiabank, CIBC, National Bank — Canada's big six, now
+# complete. Base domain only, same reasoning each time: domain_suffix
 # matching automatically covers whatever subdomain the actual login page
 # uses (e.g. RBC's online banking lives under a secure.rbc.com-style
-# subdomain, still caught by rbc.com). None of these personally verified
-# against a live login yet either — same to-do as TD above, confirm the
-# real address-bar domain during an actual login and remove this note
-# once done.
+# subdomain, still caught by rbc.com). National Bank's is nbc.ca (Banque
+# Nationale), not to be confused with the US network nbc.com — the .ca
+# TLD is the disambiguator. None of these six personally verified against
+# a live login yet — same to-do as always, confirm the real address-bar
+# domain during an actual login and remove this note once done.
 bmo.com
 rbc.com
 scotiabank.com
 cibc.com
+nbc.ca
