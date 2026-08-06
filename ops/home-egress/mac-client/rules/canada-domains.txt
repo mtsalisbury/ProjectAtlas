@@ -3,3 +3,9 @@
 
 walmart.ca
 cbc.ca
+
+# ca — catches every .ca domain broadly (sing-box domain_suffix without a
+# leading dot matches (domain|.+\.domain) as of 1.9.0+, confirmed against
+# the actual docs before adding this, not assumed). Makes the two entries
+# above redundant but harmless — left in as documented specific examples.
+ca

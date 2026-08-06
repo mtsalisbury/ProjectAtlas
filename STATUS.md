@@ -81,6 +81,8 @@ Two real bugs hit and fixed while executing the design above, both worth remembe
 
 **All four fixes verified against the real, live server, not assumed from a clean local run:** rules correctly seeded post-fix, a write persisted and confirmed via a second `GET`, that same write survived a full redeploy, `sync-rules.py` (new, in `mac-client/`, stdlib `urllib` only — no new dependency) pulled the exact expected counts down to the Mac, `generate-config.py` rebuilt `config.json` from the synced files, and `sing-box check` validated it clean. The admin panel itself confirmed present in the actual served HTML after the `index.html` fix, not just "the deploy succeeded."
 
+**Added a broad `.ca` catch-all to `canada-domains`, checked against the actual sing-box docs rather than assumed.** Confirmed via `sing-box`'s own migration notes: since 1.9.0, a `domain_suffix` entry without a leading dot matches `(domain|.+\.domain)` — so a bare `ca` entry catches every `.ca` domain, no wildcard syntax needed (sing-box doesn't use `*`). Added through the live dashboard API, synced down, regenerated, and confirmed the actual `config.json` rule reads `{"domain_suffix": ["walmart.ca", "cbc.ca", "ca"], "outbound": "toronto"}` — the specific entries stay as documented examples, now redundant but harmless under the broader rule.
+
 ---
 
 ## SOLVED, same night — the actual root cause, and the first real proof the Mac itself can consume an exit node
