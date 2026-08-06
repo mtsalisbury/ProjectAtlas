@@ -1,0 +1,1134 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<title>Atlas — Build Your Presence</title>
+
+<!-- PWA — installable via "Add to Home Screen", no app store, no review.
+     Static UI only: the tunnel itself still needs the stock Tailscale app,
+     since establishing a VPN connection needs a native OS capability
+     (NetworkExtension / VpnService) no web page can reach. -->
+<link rel="manifest" href="/manifest.json">
+<link rel="icon" href="/favicon-32.png" sizes="32x32">
+<link rel="apple-touch-icon" href="/apple-touch-icon.png">
+<meta name="theme-color" content="#5659dd">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="apple-mobile-web-app-title" content="Atlas">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=Newsreader:ital,wght@0,400;0,500;1,400&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #fafafc;
+    --card: #ffffff;
+    --ink: #12142b;
+    --ink-soft: #6b7280;
+    --accent: #5659dd;
+    --accent-bright: #7275e8;
+    --line: #e5e5ee;
+    --teal: #3a7d7d;
+    --teal-bright: #4f9d9d;
+  }
+  * { box-sizing: border-box; }
+  html { scroll-behavior: smooth; }
+  body {
+    margin: 0;
+    background: var(--bg);
+    min-height: 100vh;
+    font-family: 'Newsreader', serif;
+    color: var(--ink);
+  }
+  .top-header {
+    position: sticky;
+    top: 0;
+    background: var(--bg);
+    border-bottom: 1px solid var(--line);
+    padding: 16px 24px;
+    z-index: 100;
+    display: flex;
+    justify-content: center;
+  }
+  .page-body {
+    padding: 40px 24px 40px;
+    display: flex;
+    justify-content: center;
+  }
+  .stage {
+    width: 100%;
+    max-width: 460px;
+  }
+  .brandmark {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+  .brandmark svg { width: 22px; height: 22px; }
+  .brandmark span {
+    font-family: 'Space Grotesk', sans-serif;
+    font-weight: 700;
+    font-size: 1rem;
+    color: var(--ink);
+  }
+  .brandmark .badge {
+    width: 30px; height: 30px;
+    border-radius: 8px;
+    background: var(--accent);
+    display: flex; align-items: center; justify-content: center;
+  }
+
+  /* Waypoint trail — the signature element */
+  .trail {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    margin-bottom: 32px;
+  }
+  .trail .seg { width: 22px; height: 1px; background: var(--line); }
+  .trail .seg.done { background: var(--accent); }
+  .pin {
+    width: 10px; height: 10px;
+    border-radius: 50%;
+    border: 1.5px solid var(--line);
+    background: transparent;
+    flex-shrink: 0;
+    transition: all 0.3s ease;
+  }
+  .pin.done { background: var(--accent); border-color: var(--accent); }
+  .pin.current {
+    background: var(--teal-bright);
+    border-color: var(--teal-bright);
+    box-shadow: 0 0 0 4px rgba(79,157,157,0.2);
+  }
+
+  .card {
+    background: var(--card);
+    border: 1px solid var(--line);
+    border-radius: 16px;
+    padding: 2.4rem 2.1rem;
+    color: var(--ink);
+    box-shadow: 0 16px 40px rgba(18,20,43,0.08);
+    position: relative;
+    overflow: hidden;
+  }
+  .card::before {
+    content: '';
+    position: absolute;
+    top: 0; left: 0; right: 0;
+    height: 3px;
+    background: linear-gradient(90deg, var(--accent), var(--teal));
+  }
+
+  .eyebrow {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 0.68rem;
+    letter-spacing: 1.5px;
+    text-transform: uppercase;
+    color: var(--teal);
+    margin-bottom: 0.6rem;
+  }
+  h1 {
+    font-family: 'Space Grotesk', sans-serif;
+    font-weight: 600;
+    font-size: 1.5rem;
+    line-height: 1.3;
+    margin: 0 0 0.5rem;
+    color: var(--ink);
+  }
+  .sub {
+    font-size: 0.95rem;
+    color: var(--ink-soft);
+    line-height: 1.5;
+    margin: 0 0 1.8rem;
+  }
+
+  .options { display: flex; flex-direction: column; gap: 10px; margin-bottom: 1.8rem; }
+  .opt {
+    text-align: left;
+    background: #fff;
+    border: 1.5px solid rgba(28,26,21,0.12);
+    border-radius: 10px;
+    padding: 14px 16px;
+    font-family: 'Newsreader', serif;
+    font-size: 0.98rem;
+    color: var(--ink);
+    cursor: pointer;
+    transition: all 0.15s ease;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+  }
+  .opt:hover { border-color: var(--accent); background: #fbfbff; }
+  .opt.selected {
+    border-color: var(--teal);
+    background: rgba(58,125,125,0.06);
+  }
+  .opt .dot {
+    width: 16px; height: 16px;
+    border-radius: 50%;
+    border: 1.5px solid rgba(28,26,21,0.25);
+    flex-shrink: 0;
+  }
+  .opt.selected .dot { border-color: var(--teal); background: var(--teal); }
+
+  .field {
+    width: 100%;
+    background: #fff;
+    border: 1.5px solid rgba(28,26,21,0.12);
+    border-radius: 10px;
+    padding: 12px 14px;
+    font-family: 'Newsreader', serif;
+    font-size: 0.98rem;
+    color: var(--ink);
+    margin-bottom: 1.8rem;
+  }
+  .field:focus { outline: none; border-color: var(--teal); }
+  .field-note {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 0.7rem;
+    color: var(--ink-soft);
+    margin-top: -1.4rem;
+    margin-bottom: 1.8rem;
+  }
+
+  .nav-row { display: flex; gap: 10px; justify-content: space-between; align-items: center; }
+  .btn-primary {
+    background: var(--accent);
+    color: #fff;
+    border: none;
+    font-family: 'Space Grotesk', sans-serif;
+    font-weight: 600;
+    font-size: 0.85rem;
+    padding: 12px 22px;
+    border-radius: 8px;
+    cursor: pointer;
+    letter-spacing: 0.3px;
+    transition: background 0.15s ease;
+  }
+  .btn-primary:hover { background: var(--accent-bright); }
+  .btn-primary:disabled { opacity: 0.35; cursor: default; }
+  .btn-back {
+    background: none;
+    border: none;
+    color: var(--ink-soft);
+    font-family: 'Space Grotesk', sans-serif;
+    font-weight: 500;
+    font-size: 0.85rem;
+    cursor: pointer;
+    padding: 12px 4px;
+  }
+  .btn-back:hover { color: var(--ink); }
+  .btn-back:disabled { visibility: hidden; }
+
+  /* Welcome screen */
+  .welcome-icon {
+    width: 52px; height: 52px;
+    border-radius: 12px;
+    background: var(--accent);
+    display: flex; align-items: center; justify-content: center;
+    margin-bottom: 1.4rem;
+  }
+  .welcome-icon svg { width: 24px; height: 24px; }
+
+  /* Summary screen */
+  .summary-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    padding: 14px 0;
+    border-bottom: 1px solid rgba(28,26,21,0.1);
+    gap: 12px;
+  }
+  .summary-item:last-of-type { border-bottom: none; }
+  .summary-label {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 0.68rem;
+    letter-spacing: 0.5px;
+    text-transform: uppercase;
+    color: var(--ink-soft);
+    margin-bottom: 4px;
+  }
+  .summary-value { font-size: 0.95rem; color: var(--ink); }
+  .summary-link {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 0.7rem;
+    color: var(--teal);
+    text-decoration: none;
+    white-space: nowrap;
+    cursor: pointer;
+  }
+  .summary-link:hover { text-decoration: underline; }
+
+  .badge-default {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    background: rgba(86,89,221,0.08);
+    border: 1px solid rgba(86,89,221,0.25);
+    color: var(--accent);
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 0.65rem;
+    letter-spacing: 0.5px;
+    text-transform: uppercase;
+    padding: 5px 10px;
+    border-radius: 20px;
+    margin-bottom: 1.4rem;
+  }
+
+  /* Portal / Lens screen */
+  .lens-header { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 1.6rem; }
+  .lens-status { display: flex; align-items: center; gap: 6px; }
+  .lens-status .dot-live { width: 8px; height: 8px; border-radius: 50%; background: var(--teal); box-shadow: 0 0 0 3px rgba(58,125,125,0.2); }
+  .lens-status span { font-family: 'IBM Plex Mono', monospace; font-size: 0.7rem; color: var(--teal); letter-spacing: 0.5px; }
+  .lens-card {
+    background: #fff;
+    border: 1px solid rgba(28,26,21,0.1);
+    border-radius: 10px;
+    padding: 14px 16px;
+    margin-bottom: 10px;
+  }
+  .lens-card .k { font-family: 'IBM Plex Mono', monospace; font-size: 0.65rem; text-transform: uppercase; letter-spacing: 0.5px; color: var(--ink-soft); margin-bottom: 3px; }
+  .lens-card .v { font-size: 0.95rem; color: var(--ink); }
+  .reset-link {
+    text-align: center;
+    display: block;
+    margin-top: 1.6rem;
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 0.7rem;
+    color: var(--ink-soft);
+    text-decoration: none;
+    cursor: pointer;
+  }
+  .reset-link:hover { color: var(--ink); }
+
+  .hidden { display: none !important; }
+
+  /* The Lens — deliberately distinct from the onboarding cards.
+     Dark, data-readout styling signals "this is live status, not a form." */
+  #screen-portal.card {
+    background: #12142b;
+    border-color: #12142b;
+    color: #f2f2f8;
+  }
+  #screen-portal.card::before { background: linear-gradient(90deg, var(--teal), var(--teal-bright)); }
+  #screen-portal .eyebrow { color: var(--teal-bright); }
+  #screen-portal h1 { color: #f2f2f8; }
+  #screen-portal .lens-card { background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1); }
+  #screen-portal .lens-card .k { color: rgba(255,255,255,0.45); }
+  #screen-portal .lens-card .v { color: #f2f2f8; font-family: 'IBM Plex Mono', monospace; font-size: 0.88rem; }
+  #screen-portal .reset-link { color: rgba(255,255,255,0.5); }
+  #screen-portal .reset-link:hover { color: #f2f2f8; }
+
+  /* ---- Added: auth, enrollment, live Lens state ---- */
+
+  .msg {
+    display: none;
+    padding: 12px 15px;
+    border-radius: 10px;
+    font-size: 0.88rem;
+    line-height: 1.5;
+    margin-bottom: 1.2rem;
+  }
+  .msg.err { display: block; background: #fdeeec; color: #c0392b; border: 1px solid #f5cdc7; }
+  .msg.ok  { display: block; background: #e6f5ef; color: #0f8a5f; border: 1px solid #c2e6d5; }
+
+  .field.tight { margin-bottom: 1rem; }
+  .field-label {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 0.68rem;
+    letter-spacing: 0.5px;
+    text-transform: uppercase;
+    color: var(--ink-soft);
+    margin-bottom: 6px;
+  }
+  .alt-row {
+    text-align: center;
+    margin-top: 1.2rem;
+    font-size: 0.88rem;
+    color: var(--ink-soft);
+  }
+  .alt-row a { color: var(--accent); cursor: pointer; font-weight: 500; }
+  .alt-row a:hover { text-decoration: underline; }
+
+  /* status pills */
+  .pill {
+    display: inline-flex; align-items: center; gap: 5px;
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 0.68rem; padding: 3px 9px; border-radius: 20px;
+  }
+  .pill .d { width: 6px; height: 6px; border-radius: 50%; background: currentColor; }
+  .pill.ok   { background: rgba(58,125,125,0.15); color: var(--teal-bright); }
+  .pill.err  { background: rgba(192,57,43,0.15);  color: #e8796b; }
+  .pill.warn { background: rgba(178,106,0,0.15);  color: #d99a3a; }
+
+  /* device rows inside the dark Lens */
+  .devrow {
+    display: flex; align-items: center; gap: 12px;
+    padding: 11px 0;
+    border-bottom: 1px solid rgba(255,255,255,0.08);
+  }
+  .devrow:last-child { border-bottom: none; }
+  .devrow .nm { font-size: 0.9rem; }
+  .devrow .ip {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 0.72rem; color: rgba(255,255,255,0.45);
+  }
+  #screen-portal .btn-secondary {
+    background: rgba(255,255,255,0.08);
+    border: 1px solid rgba(255,255,255,0.15);
+    color: #f2f2f8;
+  }
+  #screen-portal .btn-secondary:hover { background: rgba(255,255,255,0.14); }
+  .btn-secondary {
+    background: none;
+    border: 1.5px solid rgba(28,26,21,0.12);
+    color: var(--ink);
+    font-family: 'Space Grotesk', sans-serif;
+    font-weight: 500; font-size: 0.82rem;
+    padding: 10px 16px; border-radius: 8px; cursor: pointer;
+  }
+  .btn-secondary:hover { border-color: var(--accent); color: var(--accent); }
+
+  /* enrollment */
+  .tabs { display: flex; gap: 6px; flex-wrap: wrap; margin-bottom: 1.4rem; }
+  .tab {
+    padding: 8px 13px; border: 1.5px solid rgba(28,26,21,0.12);
+    border-radius: 8px; background: #fff; cursor: pointer;
+    font-family: 'Space Grotesk', sans-serif; font-size: 0.8rem; font-weight: 500;
+    color: var(--ink);
+  }
+  .tab:hover { border-color: var(--accent); }
+  .tab.act { background: var(--ink); color: #fff; border-color: var(--ink); }
+  pre.cmd {
+    background: #12142b; color: #e8eaf6;
+    padding: 14px 15px; border-radius: 10px;
+    font-family: 'IBM Plex Mono', monospace; font-size: 0.75rem;
+    line-height: 1.65; white-space: pre-wrap; word-break: break-all;
+    margin: 0 0 10px; overflow-x: auto;
+  }
+  .warnbox {
+    background: rgba(178,106,0,0.08);
+    border: 1px solid rgba(178,106,0,0.25);
+    color: #7a4a00;
+    padding: 12px 14px; border-radius: 10px;
+    font-size: 0.85rem; line-height: 1.55; margin-bottom: 1.2rem;
+  }
+  ol.steps { margin: 0 0 1.2rem; padding-left: 20px; font-size: 0.92rem; line-height: 1.6; }
+  ol.steps li { margin-bottom: 9px; }
+  ol.steps code, .inline-code {
+    font-family: 'IBM Plex Mono', monospace; font-size: 0.78rem;
+    background: rgba(86,89,221,0.08); color: var(--accent);
+    padding: 2px 6px; border-radius: 5px; word-break: break-all;
+  }
+  textarea.field { resize: vertical; min-height: 76px; font-family: 'IBM Plex Mono', monospace; font-size: 0.8rem; }
+  .btn-row-wrap { display: flex; gap: 10px; flex-wrap: wrap; }
+
+  /* ---- Route Path Selection ---- */
+  .paths { display: flex; flex-direction: column; gap: 7px; }
+  .path {
+    display: flex; align-items: center; gap: 11px;
+    padding: 11px 13px; border-radius: 9px; cursor: pointer;
+    background: rgba(255,255,255,0.05);
+    border: 1.5px solid rgba(255,255,255,0.12);
+    transition: all 0.15s ease;
+  }
+  .path:hover { border-color: var(--teal-bright); background: rgba(255,255,255,0.09); }
+  .path.cur { border-color: var(--teal-bright); background: rgba(79,157,157,0.18); }
+  .path.off { opacity: 0.45; cursor: not-allowed; }
+  .path.off:hover { border-color: rgba(255,255,255,0.12); background: rgba(255,255,255,0.05); }
+  .path .radio {
+    width: 15px; height: 15px; border-radius: 50%; flex-shrink: 0;
+    border: 1.5px solid rgba(255,255,255,0.35);
+  }
+  .path.cur .radio { border-color: var(--teal-bright); background: var(--teal-bright); }
+  .path .pl { font-size: 0.9rem; color: #f2f2f8; }
+  .path .pd {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 0.7rem; color: rgba(255,255,255,0.45); margin-top: 2px;
+  }
+  .path-summary {
+    font-size: 0.85rem; color: #f2f2f8; line-height: 1.5;
+    background: rgba(79,157,157,0.16);
+    border: 1px solid rgba(79,157,157,0.4);
+    border-radius: 9px; padding: 11px 13px; margin-bottom: 10px;
+  }
+  #screen-portal pre.cmd {
+    background: rgba(0,0,0,0.35);
+    border: 1px solid rgba(255,255,255,0.12);
+    font-size: 0.72rem;
+  }
+  .path-toggle {
+    font-family: 'IBM Plex Mono', monospace; font-size: 0.68rem;
+    color: var(--teal-bright); cursor: pointer; text-transform: uppercase;
+    letter-spacing: 0.5px; display: inline-block; margin-top: 4px;
+  }
+  .path-toggle:hover { text-decoration: underline; }
+  .lan-row {
+    display: flex; align-items: center; gap: 8px;
+    font-size: 0.8rem; color: rgba(255,255,255,0.6); margin: 10px 0 0;
+  }
+  .lan-row input { accent-color: var(--teal-bright); }
+</style>
+</head>
+<body>
+
+<div class="top-header">
+  <div class="brandmark">
+    <div class="badge">
+      <svg width="18" height="18" viewBox="0 0 20 20"><circle cx="10" cy="10" r="8" fill="none" stroke="#ffffff" stroke-width="1.6" opacity="0.9"/><circle cx="10" cy="10" r="4.5" fill="none" stroke="#ffffff" stroke-width="1.6"/></svg>
+    </div>
+    <span>Project Atlas</span>
+  </div>
+</div>
+
+<div class="page-body">
+<div class="stage">
+  <div class="trail" id="trail" style="margin-top: 12px;"></div>
+
+  <div class="msg" id="msg"></div>
+
+  <!-- AUTH -->
+  <div class="card hidden" id="screen-auth">
+    <div class="welcome-icon">
+      <svg viewBox="0 0 24 24" fill="none" stroke="#ffffff" stroke-width="1.8"><circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="4"/></svg>
+    </div>
+    <div class="eyebrow" id="auth-eyebrow">Create your Presence</div>
+    <h1 id="auth-title">Your presence, not your provider's.</h1>
+    <p class="sub" id="auth-sub">Your phone keeps the same identity in every country it roams into. Your internet connection doesn't — every network you join decides who you appear to be. This gives you one presence that you carry.</p>
+
+    <div class="field-label">Email</div>
+    <input class="field tight" type="email" id="auth-email" autocomplete="email" placeholder="you@example.com">
+    <div class="field-label">Password</div>
+    <input class="field tight" type="password" id="auth-password" autocomplete="current-password" placeholder="••••••••">
+
+    <div class="nav-row" style="justify-content: flex-end; margin-top: 1.4rem;">
+      <button class="btn-primary" id="auth-btn">Create my Presence</button>
+    </div>
+    <div class="alt-row" id="auth-alt">
+      Already have one? <a id="auth-toggle">Sign in</a>
+    </div>
+  </div>
+
+  <!-- WELCOME -->
+  <div class="card hidden" id="screen-welcome">
+    <div class="welcome-icon">
+      <svg viewBox="0 0 24 24" fill="none" stroke="#ffffff" stroke-width="1.8"><circle cx="12" cy="12" r="9"/><path d="M12 3v18M3 12h18"/></svg>
+    </div>
+    <div class="eyebrow">Basic Presence</div>
+    <h1>Let's build your Presence.</h1>
+    <p class="sub">Five short questions. No technical knowledge needed. What you set up here becomes your default — always there, always working, and you can change it anytime.</p>
+    <div class="nav-row" style="justify-content: flex-end;">
+      <button class="btn-primary" onclick="goTo(1)">Begin</button>
+    </div>
+  </div>
+
+  <!-- Q1 -->
+  <div class="card hidden" id="screen-q1">
+    <div class="eyebrow">Question 1 of 5</div>
+    <h1>What do you want to accomplish?</h1>
+    <p class="sub">Choose the one that fits best.</p>
+    <div class="options" id="q1-options">
+      <button class="opt" data-val="consistent">Present myself consistently, wherever I go <span class="dot" style="margin-left:auto"></span></button>
+      <button class="opt" data-val="control">Control where I appear to be <span class="dot" style="margin-left:auto"></span></button>
+    </div>
+    <div class="nav-row">
+      <button class="btn-back" onclick="goTo(0)">Back</button>
+      <button class="btn-primary" id="q1-next" onclick="goTo(2)" disabled>Continue</button>
+    </div>
+  </div>
+
+  <!-- Q2 -->
+  <div class="card hidden" id="screen-q2">
+    <div class="eyebrow">Question 2 of 5</div>
+    <h1>What devices do you have?</h1>
+    <p class="sub">We'll tailor your setup instructions to match.</p>
+    <div class="options" id="q2-options">
+      <button class="opt" data-val="phone">Phone<span class="dot" style="margin-left:auto"></span></button>
+      <button class="opt" data-val="tablet">Tablet or iPad<span class="dot" style="margin-left:auto"></span></button>
+      <button class="opt" data-val="laptop">Laptop<span class="dot" style="margin-left:auto"></span></button>
+      <button class="opt" data-val="computer">Computer<span class="dot" style="margin-left:auto"></span></button>
+      <button class="opt" data-val="all">All of the above<span class="dot" style="margin-left:auto"></span></button>
+    </div>
+    <div class="nav-row">
+      <button class="btn-back" onclick="goTo(1)">Back</button>
+      <button class="btn-primary" id="q2-next" onclick="goTo(3)" disabled>Continue</button>
+    </div>
+  </div>
+
+  <!-- Q3 -->
+  <div class="card hidden" id="screen-q3">
+    <div class="eyebrow">Question 3 of 5</div>
+    <h1>Where's home?</h1>
+    <p class="sub">We've filled this in from your account. This becomes the place your Presence can appear to be — change it if it's not right.</p>
+    <input class="field" id="q3-address" value="Toronto, Ontario, Canada">
+    <div class="field-note">Pulled from your account details</div>
+    <div class="nav-row">
+      <button class="btn-back" onclick="goTo(2)">Back</button>
+      <button class="btn-primary" onclick="goTo(4)">Continue</button>
+    </div>
+  </div>
+
+  <!-- Q4 -->
+  <div class="card hidden" id="screen-q4">
+    <div class="eyebrow">Question 4 of 5</div>
+    <h1>How do you want to be presented?</h1>
+    <p class="sub">This is about how the world sees you online — not about hiding.</p>
+    <div class="options" id="q4-options">
+      <button class="opt" data-val="consistent">As myself, consistently — one identity, wherever I go<span class="dot" style="margin-left:auto"></span></button>
+      <button class="opt" data-val="context">Differently depending on context — work and personal stay separate<span class="dot" style="margin-left:auto"></span></button>
+      <button class="opt" data-val="place">From a specific place — I want to appear at home, wherever I am<span class="dot" style="margin-left:auto"></span></button>
+    </div>
+    <div class="nav-row">
+      <button class="btn-back" onclick="goTo(3)">Back</button>
+      <button class="btn-primary" id="q4-next" onclick="goTo(5)" disabled>Continue</button>
+    </div>
+  </div>
+
+  <!-- Q5 -->
+  <div class="card hidden" id="screen-q5">
+    <div class="eyebrow">Question 5 of 5</div>
+    <h1>How comfortable are you with technical settings?</h1>
+    <p class="sub">This shapes how much detail we show you — you can always change it later.</p>
+    <div class="options" id="q5-options">
+      <button class="opt" data-val="simple">I just want it to work — keep it simple<span class="dot" style="margin-left:auto"></span></button>
+      <button class="opt" data-val="some">I'm comfortable with some technical settings<span class="dot" style="margin-left:auto"></span></button>
+      <button class="opt" data-val="full">I want full control — show me everything<span class="dot" style="margin-left:auto"></span></button>
+    </div>
+    <div class="nav-row">
+      <button class="btn-back" onclick="goTo(4)">Back</button>
+      <button class="btn-primary" id="q5-next" onclick="buildSummary()" disabled>Build my Presence</button>
+    </div>
+  </div>
+
+  <!-- SUMMARY -->
+  <div class="card hidden" id="screen-summary">
+    <div class="badge-default">★ Your default Presence</div>
+    <h1>Here's what we've set up.</h1>
+    <p class="sub">This is your foundation — always here, always working. You can adjust any part below, and you can always reset back to this if something changes.</p>
+    <div id="summary-items"></div>
+    <div class="nav-row" style="margin-top: 1.6rem;">
+      <button class="btn-back" onclick="goTo(5)">Back</button>
+      <button class="btn-primary" onclick="goTo(6)">Go to my Portal</button>
+    </div>
+  </div>
+
+  <!-- PORTAL / LENS -->
+  <div class="card hidden" id="screen-portal">
+    <div class="lens-header">
+      <div>
+        <div class="eyebrow">Your Presence</div>
+        <h1 style="margin-bottom:0;">The Lens</h1>
+      </div>
+      <div class="lens-status"><span class="dot-live"></span><span>ACTIVE</span></div>
+    </div>
+    <div class="lens-card"><div class="k">You are</div><div class="v" id="lens-identity">—</div></div>
+    <div class="lens-card"><div class="k">Currently presenting as</div><div class="v" id="lens-present">—</div></div>
+    <div class="lens-card">
+      <div class="k">Declared origin</div>
+      <div class="v" id="lens-origin">—</div>
+      <div id="path-picker" style="margin-top:12px;"></div>
+      <div id="path-apply" class="hidden" style="margin-top:12px;"></div>
+    </div>
+    <div class="lens-card"><div class="k">Home reference</div><div class="v" id="lens-home">—</div></div>
+    <div class="lens-card"><div class="k">Interface level</div><div class="v" id="lens-level">—</div></div>
+
+    <div class="lens-card">
+      <div class="k" style="margin-bottom:8px;">Devices carrying this Presence</div>
+      <div id="lens-devicelist"></div>
+    </div>
+
+    <div class="btn-row-wrap" style="margin-top:1.4rem;">
+      <button class="btn-secondary" id="btn-add-device">+ Add a device</button>
+      <button class="btn-secondary" id="btn-refresh-lens">↻ Refresh</button>
+      <button class="btn-secondary" id="btn-signout">Sign out</button>
+    </div>
+  </div>
+
+  <!-- ENROLL -->
+  <div class="card hidden" id="screen-enroll">
+    <div class="eyebrow">Add a device</div>
+    <h1>Bring another device into your Presence.</h1>
+    <p class="sub">This device will carry the same Presence as everything else you own — not a separate identity.</p>
+
+    <div class="tabs" id="platform-tabs"></div>
+
+    <div class="field-label">Name this device (optional)</div>
+    <input class="field tight" type="text" id="dev-label" placeholder="Work laptop">
+
+    <div id="enroll-desktop">
+      <div class="nav-row" style="justify-content: flex-end; margin-top: 1rem;">
+        <button class="btn-primary" id="enroll-btn">Get my enrollment key</button>
+      </div>
+      <div id="enroll-out" class="hidden" style="margin-top:1.4rem;"></div>
+    </div>
+
+    <div id="enroll-mobile" class="hidden">
+      <div class="warnbox" id="mobile-note"></div>
+      <ol class="steps" id="mobile-steps"></ol>
+      <div class="field-label">Paste the registration link from the app</div>
+      <textarea class="field tight" id="node-key" rows="3" placeholder="https://mesh.rpnwireless.com/register/nodekey:..."></textarea>
+      <div class="nav-row" style="justify-content: flex-end;">
+        <button class="btn-primary" id="mobile-btn">Register this device</button>
+      </div>
+    </div>
+
+    <div class="nav-row" style="margin-top:1.6rem;">
+      <button class="btn-back" id="btn-back-lens">← Back to my Presence</button>
+    </div>
+  </div>
+</div>
+</div>
+
+<script>
+/* =========================================================================
+   Atlas Presence — client agent
+
+   Every screen below is rendered from a live server response. The prototype's
+   local fake state is gone, per STATUS.md Part 3.8's open item:
+   "the presence.html questionnaire prototype still uses fake local JavaScript
+    state for its summary and Lens screens."
+
+   Question meanings match main.py exactly — do not renumber:
+     q1 goal | q2 devices owned | q3 HOME ADDRESS | q4 presented as | q5 skill
+   q3 is the one passed to provision_presence() for exit-node matching.
+   ========================================================================= */
+
+const state = { q1: null, q2: null, q3: 'Toronto, Ontario, Canada', q4: null, q5: null };
+
+/* 'auth' and 'enroll' are appended, not prepended, so the existing
+   welcome=0 / q1=1 … q5=5 indices the onclick handlers rely on stay valid. */
+const screens = ['welcome','q1','q2','q3','q4','q5','summary','portal','auth','enroll'];
+const AUTH = 8, ENROLL = 9, PORTAL = 7, SUMMARY = 6;
+let current = 0;
+
+let token = sessionStorage.getItem('atlas_presence_token') || null;
+let authMode = 'signup';
+let platform = 'macos';
+
+const $ = id => document.getElementById(id);
+
+function msg(text, kind) {
+  const m = $('msg');
+  if (!text) { m.className = 'msg'; m.textContent = ''; return; }
+  m.className = 'msg ' + (kind || 'err');
+  m.textContent = text;
+  window.scrollTo({ top: 0, behavior: 'smooth' });
+}
+
+async function api(path, opts) {
+  opts = opts || {};
+  const headers = Object.assign({ 'Content-Type': 'application/json' }, opts.headers || {});
+  if (token) headers['X-Presence-Token'] = token;
+  const res = await fetch(path, Object.assign({}, opts, { headers }));
+  let data = {};
+  try { data = await res.json(); } catch (e) {}
+  if (!res.ok) throw new Error(data.detail || ('Request failed (' + res.status + ')'));
+  return data;
+}
+
+function renderTrail() {
+  const trail = document.getElementById('trail');
+  // The trail is a questionnaire wayfinder. It means nothing on auth,
+  // the Lens, or enrollment, so it's hidden there rather than shown frozen.
+  const inQuiz = current >= 1 && current <= SUMMARY;
+  trail.style.display = inQuiz ? 'flex' : 'none';
+  const steps = 5;
+  trail.innerHTML = '';
+  for (let i = 1; i <= steps; i++) {
+    if (i > 1) {
+      const seg = document.createElement('div');
+      seg.className = 'seg' + (current >= i ? ' done' : '');
+      trail.appendChild(seg);
+    }
+    const pin = document.createElement('div');
+    pin.className = 'pin' + (current > i ? ' done' : current === i ? ' current' : '');
+    trail.appendChild(pin);
+  }
+}
+
+function goTo(index) {
+  document.getElementById('screen-' + screens[current]).classList.add('hidden');
+  current = index;
+  document.getElementById('screen-' + screens[current]).classList.remove('hidden');
+  renderTrail();
+  window.scrollTo({ top: 0, behavior: 'smooth' });
+  if (screens[current] === 'portal') populateLens();
+}
+
+function wireOptions(groupId, stateKey, nextBtnId) {
+  const group = document.getElementById(groupId);
+  group.querySelectorAll('.opt').forEach(btn => {
+    btn.addEventListener('click', () => {
+      group.querySelectorAll('.opt').forEach(b => b.classList.remove('selected'));
+      btn.classList.add('selected');
+      state[stateKey] = btn.dataset.val;
+      if (nextBtnId) document.getElementById(nextBtnId).disabled = false;
+    });
+  });
+}
+wireOptions('q1-options', 'q1', 'q1-next');
+wireOptions('q2-options', 'q2', 'q2-next');
+wireOptions('q4-options', 'q4', 'q4-next');
+wireOptions('q5-options', 'q5', 'q5-next');
+
+document.getElementById('q3-address').addEventListener('input', e => { state.q3 = e.target.value; });
+
+const LABELS = {
+  q1: { consistent: 'Present myself consistently, wherever I go', control: 'Control where I appear to be' },
+  q2: { phone: 'Phone', tablet: 'Tablet / iPad', laptop: 'Laptop', computer: 'Computer', all: 'Phone, tablet, laptop, and computer' },
+  q4: { consistent: 'As myself, consistently', context: 'Differently, by context', place: 'From a specific place — home' },
+  q5: { simple: 'Simple — just work', some: 'Some technical settings', full: 'Full control' }
+};
+
+/* ---------------------------------------------------------------------
+   Provisioning — this is the real call now, not a local summary render.
+   POST /api/presence/provision creates the Headscale user, writes them into
+   group:personal in acl.hujson, restarts Headscale, and matches an exit node.
+   --------------------------------------------------------------------- */
+async function buildSummary() {
+  for (const k of ['q1','q2','q3','q4','q5']) {
+    if (!state[k]) { msg('Please answer every question before building your Presence.'); return; }
+  }
+  const btn = $('q5-next');
+  btn.disabled = true; btn.textContent = 'Building…';
+  msg(null);
+  try {
+    const result = await api('/api/presence/provision', {
+      method: 'POST',
+      body: JSON.stringify({ q1: state.q1, q2: state.q2, q3: state.q3, q4: state.q4, q5: state.q5 })
+    });
+
+    $('summary-items').innerHTML = [
+      { label: 'Goal',                 value: LABELS.q1[state.q1] || state.q1 },
+      { label: 'Devices',              value: LABELS.q2[state.q2] || state.q2 },
+      { label: 'Home reference',       value: state.q3 },
+      { label: 'How you are presented',value: LABELS.q4[state.q4] || state.q4 },
+      { label: 'Interface level',      value: LABELS.q5[state.q5] || state.q5 },
+      { label: 'Your context',         value: result.headscale_username },
+      { label: 'Matched egress',       value: result.exit_node },
+    ].map(i => `
+      <div class="summary-item">
+        <div>
+          <div class="summary-label">${i.label}</div>
+          <div class="summary-value">${i.value || '—'}</div>
+        </div>
+      </div>`).join('');
+
+    goTo(SUMMARY);
+  } catch (e) {
+    msg(e.message);
+  } finally {
+    btn.disabled = false; btn.textContent = 'Build my Presence';
+  }
+}
+
+/* ---------------------------------------------------------------------
+   The Lens — live, from GET /api/presence/lens
+   --------------------------------------------------------------------- */
+function pill(state_, label) {
+  const k = state_ === true ? 'ok' : state_ === false ? 'err' : 'warn';
+  return `<span class="pill ${k}"><span class="d"></span>${label}</span>`;
+}
+
+async function populateLens() {
+  try {
+    const d = await api('/api/presence/lens');
+    const p = d.presentation || {};
+    const persona = d.persona || {};
+
+    $('lens-identity').textContent = d.presence.email + '  ·  ' + (d.presence.context || 'not provisioned');
+    $('lens-present').textContent  = LABELS.q4[persona.presented_as] || persona.presented_as || '—';
+    $('lens-home').textContent     = persona.home || '—';
+    $('lens-level').textContent    = LABELS.q5[persona.skill_level] || persona.skill_level || '—';
+
+    // Declared origin is the honest one: name the egress, but also say whether
+    // it's actually online and whether its exit route was ever approved.
+    // Reporting a matched exit node that isn't routing would be a false green light.
+    // Presenting from your real location is a deliberate choice, not a blank.
+    $('lens-origin').innerHTML = p.presenting_directly
+      ? 'Where I actually am<br>' + pill(true, 'no egress — presenting honestly')
+      : (p.label || p.exit_node || '—') + '<br>' +
+        pill(p.exit_node_online, p.exit_node_online ? 'egress online' : 'egress offline') + ' ' +
+        pill(p.exit_route_approved, p.exit_route_approved ? 'route approved' : 'route not approved') + ' ' +
+        pill(p.exit_route_serving, p.exit_route_serving ? 'route serving' : 'route not serving') +
+        (d.mesh_reachable ? '' : ' ' + pill(false, 'mesh unreachable'));
+
+    loadPaths();
+
+    $('lens-devicelist').innerHTML = (d.devices && d.devices.length)
+      ? d.devices.map(dev => `
+          <div class="devrow">
+            ${pill(dev.online, dev.online ? 'online' : 'offline')}
+            <div style="flex:1">
+              <div class="nm">${dev.name || 'unnamed device'}</div>
+              <div class="ip">${(dev.ip_addresses || []).join('  ·  ') || 'no address'}</div>
+            </div>
+          </div>`).join('')
+      : `<div class="v" style="opacity:.6">No devices yet — add one to start carrying this Presence.</div>`;
+
+    document.querySelector('.lens-status span').textContent =
+      d.mesh_reachable ? 'ACTIVE' : 'OFFLINE VIEW';
+  } catch (e) {
+    msg(e.message);
+  }
+}
+
+/* ---------------------------------------------------------------------
+   Route Path Selection — change where the internet sees you from.
+
+   The device still performs the switch; Headscale can't push an exit-node
+   choice to a client. So this saves the intent server-side and hands back the
+   exact command. The picker stays collapsed until asked for, so the Lens reads
+   as a status view first and a control second (STATUS.md Part 3.5).
+   --------------------------------------------------------------------- */
+let pathsOpen = false;
+let allowLan = true;
+
+async function loadPaths() {
+  const box = $('path-picker');
+  if (!pathsOpen) {
+    box.innerHTML = '<span class="path-toggle" id="path-open">Change how I appear →</span>';
+    $('path-open').addEventListener('click', () => { pathsOpen = true; loadPaths(); });
+    return;
+  }
+  box.innerHTML = '<div class="pd">Loading egress options…</div>';
+  try {
+    const d = await api('/api/presence/paths');
+    box.innerHTML =
+      '<div class="paths">' +
+      d.paths.map(p => {
+        const off = !p.available;
+        const cur = p.current;
+        const offReason = p.online === false ? 'offline — unavailable right now'
+          : 'approved but not currently serving — unavailable right now';
+        return `<div class="path ${cur ? 'cur' : ''} ${off ? 'off' : ''}" data-p="${p.name}" ${off ? 'data-off="1"' : ''}>
+                  <div class="radio"></div>
+                  <div style="flex:1">
+                    <div class="pl">${p.label}</div>
+                    <div class="pd">${off ? offReason : (p.description || '')}</div>
+                  </div>
+                </div>`;
+      }).join('') +
+      '</div>' +
+      `<label class="lan-row"><input type="checkbox" id="lan-chk" ${allowLan ? 'checked' : ''}>
+         Keep my local devices reachable (printers, NAS)</label>` +
+      '<span class="path-toggle" id="path-close">Close</span>';
+
+    $('lan-chk').addEventListener('change', e => { allowLan = e.target.checked; });
+    $('path-close').addEventListener('click', () => {
+      pathsOpen = false; $('path-apply').classList.add('hidden'); loadPaths();
+    });
+    document.querySelectorAll('#path-picker .path').forEach(el => {
+      el.addEventListener('click', () => {
+        if (el.dataset.off) {
+          msg('That egress is offline right now — pick another, or present from where you actually are.');
+          return;
+        }
+        selectPath(el.dataset.p);
+      });
+    });
+  } catch (e) {
+    box.innerHTML = `<div class="pd">Couldn't load egress options: ${e.message}</div>`;
+  }
+}
+
+async function selectPath(name) {
+  msg(null);
+  try {
+    const d = await api('/api/presence/path', {
+      method: 'POST',
+      body: JSON.stringify({ path: name, allow_lan: allowLan })
+    });
+    const out = $('path-apply');
+    out.innerHTML =
+      `<div class="path-summary">${d.summary}</div>` +
+      `<pre class="cmd">${d.apply.command}</pre>` +
+      `<div class="btn-row-wrap">
+         <button class="btn-secondary" id="copy-path">Copy command</button>
+       </div>
+       <div class="pd" style="margin-top:9px;">${d.apply.explanation} ${d.note}</div>`;
+    out.classList.remove('hidden');
+    $('copy-path').addEventListener('click', async () => {
+      try { await navigator.clipboard.writeText(d.apply.command); $('copy-path').textContent = 'Copied'; }
+      catch (e) { $('copy-path').textContent = 'Select and copy above'; }
+      setTimeout(() => { $('copy-path').textContent = 'Copy command'; }, 1800);
+    });
+    // Re-render the Lens header so the declared origin reflects the new choice
+    // immediately, without collapsing the picker the person is still using.
+    const lens = await api('/api/presence/lens');
+    const p = lens.presentation;
+    $('lens-origin').innerHTML = p.presenting_directly
+      ? 'Where I actually am<br>' + pill(true, 'no egress — presenting honestly')
+      : (p.label || p.exit_node) + '<br>' +
+        pill(p.exit_node_online, p.exit_node_online ? 'egress online' : 'egress offline') + ' ' +
+        pill(p.exit_route_approved, p.exit_route_approved ? 'route approved' : 'route not approved') + ' ' +
+        pill(p.exit_route_serving, p.exit_route_serving ? 'route serving' : 'route not serving');
+    loadPaths();
+  } catch (e) { msg(e.message); }
+}
+
+/* ---------------------------------------------------------------------
+   Auth
+   --------------------------------------------------------------------- */
+function setAuthMode(m) {
+  authMode = m;
+  const s = m === 'signup';
+  $('auth-eyebrow').textContent = s ? 'Create your Presence' : 'Welcome back';
+  $('auth-title').textContent   = s ? "Your presence, not your provider's." : 'Sign in to your Presence.';
+  $('auth-sub').textContent     = s
+    ? "Your phone keeps the same identity in every country it roams into. Your internet connection doesn't — every network you join decides who you appear to be. This gives you one presence that you carry."
+    : 'The same Presence, on whichever device you happen to be holding.';
+  $('auth-btn').textContent     = s ? 'Create my Presence' : 'Sign in';
+  $('auth-alt').innerHTML       = s
+    ? 'Already have one? <a id="auth-toggle">Sign in</a>'
+    : 'Need a Presence? <a id="auth-toggle">Create one</a>';
+  $('auth-toggle').addEventListener('click', () => setAuthMode(s ? 'login' : 'signup'));
+  msg(null);
+}
+
+$('auth-btn').addEventListener('click', async () => {
+  const email = $('auth-email').value.trim();
+  const password = $('auth-password').value;
+  if (!email || !password) return msg('Enter an email and a password.');
+  $('auth-btn').disabled = true;
+  try {
+    const d = await api('/api/presence/' + authMode, {
+      method: 'POST', body: JSON.stringify({ email, password })
+    });
+    if (!d.token) throw new Error('Server did not return a token.');
+    token = d.token;
+    sessionStorage.setItem('atlas_presence_token', token);
+    msg(null);
+    await routeAfterAuth();
+  } catch (e) { msg(e.message); }
+  finally { $('auth-btn').disabled = false; }
+});
+
+async function routeAfterAuth() {
+  // Already provisioned? Straight to the Lens. Otherwise start the questionnaire.
+  try {
+    const st = await api('/api/presence/status');
+    if (st && st.provisioned) {
+      if (st.home) state.q3 = st.home;
+      return goTo(PORTAL);
+    }
+  } catch (e) {
+    if (/401/.test(e.message) || /token/i.test(e.message)) {
+      token = null; sessionStorage.removeItem('atlas_presence_token');
+      return goTo(AUTH);
+    }
+  }
+  goTo(0);
+}
+
+function signOut() {
+  token = null;
+  sessionStorage.removeItem('atlas_presence_token');
+  $('auth-email').value = ''; $('auth-password').value = '';
+  for (const k of ['q1','q2','q4','q5']) state[k] = null;
+  msg(null);
+  setAuthMode('login');
+  goTo(AUTH);
+}
+
+/* ---------------------------------------------------------------------
+   Enrollment — the tail that ties a device to the mesh
+   --------------------------------------------------------------------- */
+const PLATFORMS = [['macos','Mac'], ['windows','Windows'], ['linux','Linux'], ['mobile','iPhone / Android']];
+
+function renderTabs() {
+  $('platform-tabs').innerHTML = PLATFORMS
+    .map(([v, l]) => `<button class="tab ${v === platform ? 'act' : ''}" data-p="${v}">${l}</button>`)
+    .join('');
+  document.querySelectorAll('#platform-tabs .tab').forEach(t => {
+    t.addEventListener('click', () => {
+      platform = t.dataset.p;
+      renderTabs();
+      $('enroll-out').classList.add('hidden');
+      msg(null);
+      if (platform === 'mobile') loadMobileSteps();
+    });
+  });
+  $('enroll-desktop').classList.toggle('hidden', platform === 'mobile');
+  $('enroll-mobile').classList.toggle('hidden', platform !== 'mobile');
+}
+
+async function loadMobileSteps() {
+  // Steps come from the server so the coordination-server URL can never drift
+  // out of sync with what the mesh actually expects. Uses the GET variant so
+  // that merely looking at the mobile tab doesn't mint a pre-auth key that the
+  // mobile flow can't even redeem.
+  try {
+    const ins = await api('/api/presence/enroll/mobile-steps');
+    $('mobile-note').innerHTML = ins.note;
+    $('mobile-steps').innerHTML = ins.steps
+      .map(s => `<li>${s.replace(/(https:\/\/\S+)/g, '<code>$1</code>')}</li>`).join('');
+  } catch (e) { msg(e.message); }
+}
+
+$('enroll-btn').addEventListener('click', async () => {
+  $('enroll-btn').disabled = true;
+  msg(null);
+  try {
+    const d = await api('/api/presence/enroll', {
+      method: 'POST',
+      body: JSON.stringify({ platform, device_label: $('dev-label').value.trim() })
+    });
+    const ins = d.instructions[platform];
+    $('enroll-out').innerHTML = `
+      <div class="warnbox">This key enrolls <strong>one device</strong> and expires in
+        ${d.expires_in}. It won't work a second time.</div>
+      <pre class="cmd">${ins.command}</pre>
+      <div class="btn-row-wrap">
+        <button class="btn-secondary" id="copy-cmd">Copy command</button>
+        <button class="btn-secondary" id="done-cmd">I've run it — check my devices</button>
+      </div>
+      <p class="sub" style="margin:1rem 0 0;">${ins.note}</p>`;
+    $('enroll-out').classList.remove('hidden');
+    $('copy-cmd').addEventListener('click', async () => {
+      try { await navigator.clipboard.writeText(ins.command); $('copy-cmd').textContent = 'Copied'; }
+      catch (e) { $('copy-cmd').textContent = 'Select and copy above'; }
+      setTimeout(() => { $('copy-cmd').textContent = 'Copy command'; }, 1800);
+    });
+    $('done-cmd').addEventListener('click', () => goTo(PORTAL));
+  } catch (e) { msg(e.message); }
+  finally { $('enroll-btn').disabled = false; }
+});
+
+$('mobile-btn').addEventListener('click', async () => {
+  const nk = $('node-key').value.trim();
+  if (!nk) return msg('Paste the registration link your Tailscale app is showing.');
+  $('mobile-btn').disabled = true;
+  try {
+    const d = await api('/api/presence/enroll/mobile', {
+      method: 'POST',
+      body: JSON.stringify({ node_key: nk, device_label: $('dev-label').value.trim() })
+    });
+    $('node-key').value = '';
+    msg(d.next_step || 'Device registered.', 'ok');
+    setTimeout(() => goTo(PORTAL), 1200);
+  } catch (e) { msg(e.message); }
+  finally { $('mobile-btn').disabled = false; }
+});
+
+$('btn-add-device').addEventListener('click', () => { msg(null); renderTabs(); goTo(ENROLL); });
+$('btn-refresh-lens').addEventListener('click', populateLens);
+$('btn-signout').addEventListener('click', signOut);
+$('btn-back-lens').addEventListener('click', () => { msg(null); goTo(PORTAL); });
+
+/* ---------------------------------------------------------------------
+   Boot
+   --------------------------------------------------------------------- */
+(async function boot() {
+  setAuthMode('signup');
+  renderTabs();
+  renderTrail();
+  if (token) {
+    try { await routeAfterAuth(); return; } catch (e) {}
+  }
+  goTo(AUTH);
+})();
+</script>
+</body>
+</html>

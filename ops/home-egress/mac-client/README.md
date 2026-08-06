@@ -29,6 +29,24 @@ Toronto, home) as the actual backend each group dials out through.
 brew install sing-box
 ```
 
+## Edit the rule lists
+
+**The dashboard (`dashboard.rpnwireless.com`, admin panel) is the source of
+truth for the rule lists now, not the local `.txt` files directly.** Every
+device sharing this profile edits the same lists there — the "HOME EGRESS
+RULES" panel — so nothing drifts between devices. Pull the current lists
+down before generating config:
+
+```bash
+cd ops/home-egress/mac-client
+ATLAS_TOKEN=<your admin token> python3 sync-rules.py
+```
+
+This overwrites the local `rules/*.txt` files with whatever's on the
+dashboard. Editing the local files directly still works for a quick local
+test, but anything you type there is overwritten on the next sync — treat
+the dashboard as the real copy.
+
 ## Generate the config
 
 Get each node's mesh IP:port from the output of `add-socks-proxy.sh` /
@@ -36,16 +54,14 @@ Get each node's mesh IP:port from the output of `add-socks-proxy.sh` /
 `SOCKS_PORT` you used, default 1080), then:
 
 ```bash
-cd ops/home-egress/mac-client
 NY_SOCKS=100.64.0.X:1080 \
 TORONTO_SOCKS=100.64.0.6:1080 \
 HOME_SOCKS=100.64.0.Y:1080 \
 python3 generate-config.py
 ```
 
-This writes `config.json`. **Fill in `rules/mfa-home.txt` with your actual
-bank(s)/authenticator app(s) before this step matters** — it ships empty on
-purpose, see the comment in that file.
+This writes `config.json` from whatever's currently in `rules/*.txt` —
+run `sync-rules.py` first if you want the latest from the dashboard.
 
 ## Run
 

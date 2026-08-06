@@ -1,0 +1,366 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Atlas Admin</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;700&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #fafafc; --ink: #12142b; --accent: #5659dd; --muted: #6b7280; --border: #e5e5ee;
+    --gold: #d4af37; --panel-black: #0a0a0a; --panel-card: #141414; --panel-text: #f2f2ec; --panel-muted: #9a9a92;
+    --pass: #4caf6d; --fail: #d9534f;
+  }
+  * { box-sizing: border-box; }
+  body { background: var(--bg); color: var(--ink); font-family: 'IBM Plex Mono', monospace; margin: 0; }
+  nav { display: flex; align-items: center; gap: 0.7rem; padding: 1.5rem 3rem; border-bottom: 1px solid var(--border); }
+  .logo-badge { width: 34px; height: 34px; border-radius: 9px; background: var(--accent); display: flex; align-items: center; justify-content: center; }
+  nav .brand { font-family: 'Space Grotesk', sans-serif; font-weight: 700; font-size: 1.15rem; }
+  main { padding: 2.5rem 3rem; max-width: 1100px; margin: 0 auto; }
+  .eyebrow { color: var(--accent); font-size: 0.8rem; letter-spacing: 2px; text-transform: uppercase; font-weight: 500; }
+  h1 { font-family: 'Space Grotesk', sans-serif; font-weight: 700; font-size: 2.2rem; margin: 0.4rem 0 0.6rem; }
+  .lede { color: var(--muted); font-size: 0.95rem; max-width: 600px; margin-bottom: 2rem; }
+  .lens-panel { background: var(--panel-black); border-radius: 14px; padding: 1.8rem 2rem; margin-bottom: 1.5rem; }
+  .lens-panel h2 { font-family: 'Space Grotesk', sans-serif; color: var(--gold); font-size: 1.1rem; letter-spacing: 1px; margin: 0 0 1.2rem; }
+  .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 1rem; }
+  .card { border: 1px solid #2a2620; border-radius: 10px; padding: 1.1rem; background: var(--panel-card); cursor: pointer; }
+  .card:hover { border-color: var(--gold); }
+  .card h3 { font-family: 'Space Grotesk', sans-serif; font-weight: 500; margin: 0 0 0.6rem; color: var(--panel-text); font-size: 1rem; }
+  .status-row { display: flex; align-items: center; gap: 6px; margin-bottom: 0.5rem; }
+  .dot { width: 8px; height: 8px; border-radius: 50%; }
+  .dot.online { background: var(--gold); box-shadow: 0 0 6px var(--gold); }
+  .dot.offline { background: #4a4a44; }
+  .status-text { font-size: 0.72rem; letter-spacing: 1px; color: var(--panel-muted); }
+  .field { font-size: 0.78rem; color: var(--panel-muted); margin-top: 3px; }
+  .detail { display: none; margin-top: 0.6rem; padding-top: 0.6rem; border-top: 1px solid #2a2620; font-size: 0.75rem; color: var(--panel-muted); }
+  .detail.open { display: block; }
+  .btn-row { display: flex; flex-direction: column; gap: 6px; margin-top: 0.8rem; }
+  .test-btn { display: block; width: 100%; text-align: left; background: transparent; border: 1px solid var(--gold); color: var(--gold); font-family: 'IBM Plex Mono', monospace; font-weight: 700; font-size: 0.65rem; padding: 7px 10px; border-radius: 6px; cursor: pointer; letter-spacing: 0.5px; }
+  .test-btn:hover { background: var(--gold); color: #0a0a0a; }
+  .test-btn.done { background: var(--pass); border-color: var(--pass); color: #0a0a0a; }
+  .test-btn.done-fail { background: var(--fail); border-color: var(--fail); color: #0a0a0a; }
+  .test-btn:disabled { opacity: 0.5; cursor: default; }
+  .test-log { margin-top: 0.6rem; display: flex; flex-direction: column; gap: 4px; }
+  .test-line { font-size: 0.7rem; color: var(--panel-muted); }
+  .test-line a { color: inherit; text-decoration: underline; cursor: pointer; margin-left: 6px; }
+  .exit-row { display: flex; gap: 10px; align-items: center; }
+  .exit-select { background: var(--panel-card); border: 1px solid var(--gold); color: var(--panel-text); font-family: 'IBM Plex Mono', monospace; font-size: 0.8rem; padding: 8px 10px; border-radius: 6px; }
+  .exit-btn { background: transparent; border: 1px solid var(--gold); color: var(--gold); font-family: 'IBM Plex Mono', monospace; font-weight: 700; font-size: 0.75rem; padding: 8px 16px; border-radius: 6px; cursor: pointer; letter-spacing: 0.5px; transition: background 0.3s ease, color 0.3s ease, border-color 0.3s ease; }
+  .exit-btn:hover { background: var(--gold); color: #0a0a0a; }
+  .exit-btn.done { background: var(--pass); border-color: var(--pass); color: #0a0a0a; }
+  .exit-btn.done-fail { background: var(--fail); border-color: var(--fail); color: #0a0a0a; }
+  .exit-result { margin-top: 0.8rem; font-size: 0.75rem; color: var(--panel-muted); }
+  .exit-result a { color: inherit; text-decoration: underline; cursor: pointer; margin-left: 6px; }
+  .modal-overlay { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.6); align-items: center; justify-content: center; z-index: 50; }
+  .modal-overlay.open { display: flex; }
+  .modal-box { background: var(--panel-card); border: 1px solid var(--gold); border-radius: 10px; padding: 1.2rem 1.4rem; max-width: 480px; width: 90%; max-height: 70vh; overflow-y: auto; }
+  .modal-box h4 { color: var(--gold); font-family: 'Space Grotesk', sans-serif; margin: 0 0 0.6rem; font-size: 0.95rem; }
+  .modal-box pre { color: var(--panel-text); font-size: 0.72rem; white-space: pre-wrap; word-break: break-word; margin: 0; }
+  .modal-close { margin-top: 0.9rem; background: transparent; border: 1px solid var(--panel-muted); color: var(--panel-muted); font-family: 'IBM Plex Mono', monospace; font-size: 0.72rem; padding: 5px 12px; border-radius: 6px; cursor: pointer; }
+  .login-overlay { position: fixed; inset: 0; background: var(--bg); display: flex; align-items: center; justify-content: center; z-index: 100; }
+  .login-box { background: var(--panel-black); border: 1px solid var(--gold); border-radius: 12px; padding: 2rem; width: 340px; text-align: center; }
+  .login-box h2 { color: var(--gold); font-family: 'Space Grotesk', sans-serif; font-size: 1.2rem; margin: 0 0 1rem; }
+  .login-box input { width: 100%; background: var(--panel-card); border: 1px solid var(--gold); color: var(--panel-text); font-family: 'IBM Plex Mono', monospace; font-size: 0.85rem; padding: 10px; border-radius: 6px; margin-bottom: 0.8rem; }
+  .login-box button { width: 100%; background: var(--gold); border: none; color: #0a0a0a; font-family: 'IBM Plex Mono', monospace; font-weight: 700; font-size: 0.8rem; padding: 10px; border-radius: 6px; cursor: pointer; }
+  .login-error { color: var(--fail); font-size: 0.75rem; margin-top: 0.6rem; min-height: 1em; }
+  .hidden { display: none !important; }
+  .egress-textarea { width: 100%; min-height: 220px; background: var(--panel-card); border: 1px solid var(--gold); color: var(--panel-text); font-family: 'IBM Plex Mono', monospace; font-size: 0.8rem; padding: 10px; border-radius: 6px; resize: vertical; margin-top: 0.8rem; }
+  .egress-hint { font-size: 0.72rem; color: var(--panel-muted); margin-top: 0.5rem; line-height: 1.5; }
+  .egress-status { font-size: 0.75rem; margin-top: 0.6rem; min-height: 1.2em; }
+  .egress-status.ok { color: var(--pass); }
+  .egress-status.err { color: var(--fail); }
+</style>
+</head>
+<body>
+<div class="login-overlay" id="login-overlay">
+  <div class="login-box">
+    <h2>ATLAS ADMIN — LOCKED</h2>
+    <input type="password" id="token-input" placeholder="Enter access token">
+    <button onclick="submitToken()">Unlock</button>
+    <div class="login-error" id="login-error"></div>
+  </div>
+</div>
+
+<nav>
+  <div class="logo-badge">
+    <svg width="20" height="20" viewBox="0 0 20 20">
+      <circle cx="10" cy="10" r="8" fill="none" stroke="#ffffff" stroke-width="1.6" opacity="0.9"/>
+      <circle cx="10" cy="10" r="4.5" fill="none" stroke="#ffffff" stroke-width="1.6"/>
+    </svg>
+  </div>
+  <span class="brand">Project Atlas</span>
+</nav>
+<main>
+  <div class="eyebrow">Live instrumentation</div>
+  <h1>Atlas Admin</h1>
+  <p class="lede">Your mesh, your devices — click a node for detail, or run a test.</p>
+
+  <div class="lens-panel">
+    <h2>EXIT NODE CHECK</h2>
+    <div class="exit-row">
+      <select class="exit-select" id="exit-select">
+        <option value="EGR-Lon1">EGR-Lon1 (London)</option>
+        <option value="EGR-Tor1">EGR-Tor1 (Toronto)</option>
+      </select>
+      <button class="exit-btn" id="exit-btn" onclick="runExitCheck()">Check Exit Node</button>
+    </div>
+    <div class="exit-result" id="exit-result"></div>
+  </div>
+
+  <div class="lens-panel">
+    <h2>DEVICE RECOVERY CHECK (H5)</h2>
+    <div class="exit-row">
+      <select class="exit-select" id="h5-select"><option>Loading nodes...</option></select>
+      <button class="exit-btn" id="h5-btn" onclick="runH5Test()">Run Recovery Test</button>
+    </div>
+    <div class="exit-result" id="h5-result"></div>
+  </div>
+
+  <div class="lens-panel">
+    <h2>HOME EGRESS RULES</h2>
+    <div class="exit-row">
+      <select class="exit-select" id="egress-select" onchange="loadEgressRule()">
+        <option value="mfa-home">MFA / security-sensitive → home</option>
+        <option value="usa-domains">USA domains → NY</option>
+        <option value="usa-apps">USA apps → NY</option>
+        <option value="canada-domains">Canada domains → Toronto</option>
+        <option value="canada-apps">Canada apps → Toronto</option>
+      </select>
+      <button class="exit-btn" id="egress-save-btn" onclick="saveEgressRule()">Save</button>
+    </div>
+    <textarea class="egress-textarea" id="egress-textarea" spellcheck="false" placeholder="Loading..."></textarea>
+    <div class="egress-status" id="egress-status"></div>
+    <div class="egress-hint">One domain per line, <code>#</code> for comments. This is the shared profile every device pulls from — editing here changes what all of them see next time they sync, not just this browser.</div>
+  </div>
+
+  <div class="lens-panel">
+    <h2>MESH TOPOLOGY</h2>
+    <div id="topology" class="grid">Loading...</div>
+  </div>
+</main>
+
+<div class="modal-overlay" id="modal">
+  <div class="modal-box">
+    <h4 id="modal-title">Detail</h4>
+    <pre id="modal-body"></pre>
+    <button class="modal-close" onclick="document.getElementById('modal').classList.remove('open')">Close</button>
+  </div>
+</div>
+
+<script>
+let snapshots = {};
+let detailStore = {};
+let atlasToken = '';
+
+function submitToken() {
+  const val = document.getElementById('token-input').value;
+  if (!val) return;
+  atlasToken = val;
+  document.getElementById('login-error').textContent = '';
+  init();
+}
+
+function authFetch(url, options = {}) {
+  options.headers = Object.assign({}, options.headers, {'X-Atlas-Token': atlasToken});
+  return fetch(url, options);
+}
+
+async function init() {
+  try {
+    const res = await authFetch('/api/topology');
+    if (res.status === 401) {
+      document.getElementById('login-error').textContent = 'Incorrect token.';
+      atlasToken = '';
+      return;
+    }
+    document.getElementById('login-overlay').classList.add('hidden');
+    const data = await res.json();
+    renderTopology(data);
+    populateH5Select(data);
+    loadEgressRule();
+  } catch (e) {
+    document.getElementById('login-error').textContent = 'Connection error.';
+  }
+}
+
+async function loadEgressRule() {
+  const key = document.getElementById('egress-select').value;
+  const ta = document.getElementById('egress-textarea');
+  const status = document.getElementById('egress-status');
+  status.textContent = '';
+  status.className = 'egress-status';
+  ta.value = 'Loading...';
+  try {
+    const res = await authFetch('/api/home-egress/rules/' + key);
+    const data = await res.json();
+    ta.value = data.content || '';
+  } catch (e) {
+    ta.value = '';
+    status.textContent = 'Could not load — connection error.';
+    status.className = 'egress-status err';
+  }
+}
+
+async function saveEgressRule() {
+  const key = document.getElementById('egress-select').value;
+  const ta = document.getElementById('egress-textarea');
+  const status = document.getElementById('egress-status');
+  const btn = document.getElementById('egress-save-btn');
+  btn.disabled = true;
+  try {
+    const res = await authFetch('/api/home-egress/rules/' + key, {
+      method: 'POST', headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify({content: ta.value})
+    });
+    if (!res.ok) throw new Error('save failed');
+    status.textContent = 'Saved — every device picks this up next time it syncs.';
+    status.className = 'egress-status ok';
+  } catch (e) {
+    status.textContent = 'Save failed — connection error.';
+    status.className = 'egress-status err';
+  }
+  btn.disabled = false;
+  setTimeout(() => { status.textContent = ''; }, 4000);
+}
+
+function showModal(title, data) {
+  document.getElementById('modal-title').textContent = title;
+  document.getElementById('modal-body').textContent = JSON.stringify(data, null, 2);
+  document.getElementById('modal').classList.add('open');
+}
+
+async function getMyNetwork() {
+  const res = await fetch('https://ipinfo.io/json');
+  const d = await res.json();
+  return { public_ip: d.ip, isp: d.org, city: d.city, region: d.region, country: d.country };
+}
+
+async function runExitCheck() {
+  const exitNode = document.getElementById('exit-select').value;
+  const btn = document.getElementById('exit-btn');
+  btn.disabled = true;
+  const net = await getMyNetwork();
+
+  const res = await authFetch('/api/test/exit-node/check', {
+    method: 'POST', headers: {'Content-Type':'application/json'},
+    body: JSON.stringify({exit_node: exitNode, observed_ip: net.public_ip})
+  });
+  const result = await res.json();
+  detailStore['exit'] = result;
+
+  btn.classList.add(result.passed ? 'done' : 'done-fail');
+  btn.textContent = result.passed ? 'PASS' : 'FAIL';
+
+  document.getElementById('exit-result').innerHTML =
+    `Observed IP: ${net.public_ip} — Expected: ${result.expected_ip} — ${result.passed ? 'PASS' : 'FAIL'}
+     <a onclick="showModal('Exit Node Check — Full Detail', detailStore['exit'])">View Detail</a>`;
+
+  setTimeout(() => {
+    btn.classList.remove('done', 'done-fail');
+    btn.textContent = 'Check Exit Node';
+    btn.disabled = false;
+  }, 1500);
+}
+
+async function runFirstTest(nodeId, btn) {
+  const net = await getMyNetwork();
+  const res = await authFetch('/api/test/h6/snapshot', {
+    method: 'POST', headers: {'Content-Type':'application/json'},
+    body: JSON.stringify({node_id: nodeId, label: 'snapshot_a', network: net})
+  });
+  const snapA = await res.json();
+  snapshots[nodeId] = snapA;
+  detailStore['a-' + nodeId] = snapA;
+  btn.textContent = '1. 1st Test — Captured';
+  btn.classList.add('done');
+  btn.disabled = true;
+  const btn2 = document.getElementById('btn2-' + nodeId);
+  btn2.disabled = false;
+  const log = document.getElementById('log-' + nodeId);
+  log.innerHTML = `<div class="test-line">Snapshot A posted <a onclick="event.stopPropagation(); showModal('Snapshot A — Posted to Backend', detailStore['a-${nodeId}'])">View Detail</a></div>`;
+}
+
+async function runSecondTest(nodeId, btn) {
+  const net = await getMyNetwork();
+  const res = await authFetch('/api/test/h6/snapshot', {
+    method: 'POST', headers: {'Content-Type':'application/json'},
+    body: JSON.stringify({node_id: nodeId, label: 'snapshot_b', network: net})
+  });
+  const snapB = await res.json();
+  const cmpRes = await authFetch('/api/test/h6/compare', {
+    method: 'POST', headers: {'Content-Type':'application/json'},
+    body: JSON.stringify({snapshot_a: snapshots[nodeId], snapshot_b: snapB})
+  });
+  const result = await cmpRes.json();
+  detailStore['b-' + nodeId] = result;
+  btn.textContent = result.passed ? '2. 2nd Test — PASS' : '2. 2nd Test — FAIL';
+  btn.classList.add(result.passed ? 'done' : 'done-fail');
+  btn.disabled = true;
+  const log = document.getElementById('log-' + nodeId);
+  log.innerHTML += `<div class="test-line">Compare result <a onclick="event.stopPropagation(); showModal('Compare Result — Full Detail', detailStore['b-${nodeId}'])">View Detail</a></div>`;
+  const btn1 = document.getElementById('btn1-' + nodeId);
+  btn1.textContent = '1. Test This Node (H6)';
+  btn1.classList.remove('done');
+  btn1.disabled = false;
+  delete snapshots[nodeId];
+}
+
+function populateH5Select(data) {
+  const sel = document.getElementById('h5-select');
+  sel.innerHTML = data.nodes.map(n => `<option value="${n.id}">${n.name} (${n.context})</option>`).join('');
+}
+
+async function runH5Test() {
+  const nodeId = parseInt(document.getElementById('h5-select').value);
+  const btn = document.getElementById('h5-btn');
+  btn.disabled = true;
+
+  const res = await authFetch('/api/test/h5/run', {
+    method: 'POST', headers: {'Content-Type':'application/json'},
+    body: JSON.stringify({node_id: nodeId})
+  });
+  const result = await res.json();
+  detailStore['h5'] = result;
+
+  btn.classList.add(result.passed ? 'done' : 'done-fail');
+  btn.textContent = result.passed ? 'PASS' : 'FAIL';
+
+  document.getElementById('h5-result').innerHTML =
+    `Target node expired — other devices unaffected: ${result.others_unaffected} — ${result.passed ? 'PASS' : 'FAIL'}
+     <a onclick="showModal('H5 Device Recovery — Full Detail', detailStore['h5'])">View Detail</a>`;
+
+  setTimeout(() => {
+    btn.classList.remove('done', 'done-fail');
+    btn.textContent = 'Run Recovery Test';
+    btn.disabled = false;
+  }, 1500);
+}
+
+function renderTopology(data) {
+  const grid = document.getElementById('topology');
+  grid.innerHTML = data.nodes.map(n => `
+    <div class="card" onclick="document.getElementById('detail-${n.id}').classList.toggle('open')">
+      <h3>${n.name}</h3>
+      <div class="status-row">
+        <span class="dot ${n.online ? 'online' : 'offline'}"></span>
+        <span class="status-text">${n.online ? 'ONLINE' : 'OFFLINE'}</span>
+      </div>
+      <div class="field">Context: ${n.context}</div>
+      <div class="field">Mesh IP: ${n.ip_addresses[0] || 'n/a'}</div>
+      <div class="detail" id="detail-${n.id}">
+        Node ID: ${n.id}<br>
+        All IPs: ${n.ip_addresses.join(', ') || 'n/a'}<br>
+        Routes: ${n.routes.join(', ') || 'none'}<br>
+        Last seen: ${n.last_seen || 'n/a'}
+      </div>
+      <div class="btn-row">
+        <button class="test-btn" id="btn1-${n.id}" onclick="event.stopPropagation(); runFirstTest(${n.id}, this)">1. Test This Node (H6)</button>
+        <button class="test-btn" id="btn2-${n.id}" onclick="event.stopPropagation(); runSecondTest(${n.id}, this)" disabled>2. 2nd Network Test</button>
+      </div>
+      <div class="test-log" id="log-${n.id}"></div>
+    </div>
+  `).join('');
+}
+</script>
+</body>
+</html>
