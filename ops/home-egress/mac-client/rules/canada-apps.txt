@@ -1,0 +1,3 @@
+# Canada apps -> exit via Toronto
+# Same note as usa-apps.txt — matched by domain, not literal process.
+# Empty for now. Add domains for any Canadian banking/service apps here.

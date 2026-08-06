@@ -1,0 +1,8 @@
+# USA domains -> exit via NY
+# One domain per line. Matches this domain and all its subdomains.
+# Lines starting with # are ignored. Edit freely, no code changes needed —
+# just regenerate config.json afterward (see ../README.md).
+
+walmart.com
+hulu.com
+nytimes.com

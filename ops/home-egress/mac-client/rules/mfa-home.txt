@@ -1,0 +1,18 @@
+# MFA / security-sensitive -> ALWAYS exit via home, regardless of what
+# group they'd otherwise fall into. This list takes priority over the
+# USA/Canada lists below it in generate-config.py — if a domain appears
+# here AND in usa-domains.txt, home wins.
+#
+# THIS LIST IS EMPTY ON PURPOSE. This is the one list I can't fill in for
+# you — it needs your actual bank(s), authenticator app(s), and anything
+# else that does push-based or step-up MFA. Add one domain per line, e.g.:
+#
+# yourbank.com
+# authy.com
+# okta.com
+#
+# Some MFA push notifications ride over Apple's own push infrastructure
+# (shared by every app, not just MFA ones) rather than the bank/app's own
+# domain — that traffic can't be isolated this way, only the app's direct
+# API/sync calls can. Worth testing each entry once added, rather than
+# assuming it's fully covered.

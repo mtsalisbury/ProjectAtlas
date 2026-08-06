@@ -2,7 +2,62 @@
 
 **This is the one file to update.** Everything about where the project stands lives here now — not spread across separate documents. If something changes, it changes here, in the relevant section below, nowhere else.
 
-**Last updated:** August 5, 2026
+**Last updated:** August 6, 2026
+
+---
+
+## Part 0.0 — August 5–6 Session: Personal Multi-Group Egress (Home + NY + Toronto), Designed Not Deployed
+
+**Scope shift, worth recording plainly:** after a long design conversation working through whether Atlas could become a company (identity-attestation trust across independent relying parties — concluded, honestly, that it very likely can't at solo-founder scale, for reasons that are institutional/liability, not technical), the immediate, buildable want narrowed to something real and personal: split-tunnel Mac (and eventually phone) traffic across multiple exits at once, by destination, with home as a fourth exit node alongside NY/Toronto/London.
+
+**The rule set, exactly as specified:**
+- MFA / security-sensitive apps (a named list, not guessed) — always exit via home, regardless of what other group they'd match. Priority over every other rule.
+- USA domains + USA apps — exit via NY.
+- Canada domains + Canada apps — exit via Toronto.
+- Everything unmatched (MISC) — direct, whatever network the device is actually on, no forced detour through Canada while traveling.
+
+**Why this isn't just `tailscale set --exit-node=`:** Tailscale allows exactly one exit node per device at a time — there's no way to get four simultaneous, destination-based paths through that mechanism alone. The design instead uses the mesh purely for what it's already proven at (private, always-on peer connectivity — the same H6/isolation properties, not the exit-node-consumption path that's caused every lockout in this project) and layers a proper rule router on top:
+
+- Each exit node (NY, Toronto, home) runs a small mesh-only SOCKS5 proxy (`microsocks`), bound only to its own `100.64.x.x` address — never reachable publicly or from the home LAN.
+- The Mac runs [sing-box](https://github.com/SagerNet/sing-box) in TUN mode, intercepting all system traffic, matching each connection's destination against plain-text rule files, and dispatching it to the matching SOCKS backend — or DIRECT if nothing matches.
+- Matching is by **domain, not literal process** — there's no way to see which app opened a connection on macOS without much heavier kernel-level tooling, so "USA apps" and "USA domains" are mechanically the same thing (a curated domain list), just kept in separate files for readability. TikTok and Walmart.ca were the two examples given and are the seed entries for the USA/Canada app and domain lists respectively.
+
+**New: `ops/home-egress/`**
+- `setup-home-node.sh` — adapted from `setup-exit-node.sh` for a box on a home network instead of a public droplet: no public IP needed (Tailscale NAT-traverses fine), registers as a full exit-node provider (so the phone's stock Tailscale app can select it directly), persists `ip_forward` the same way the Toronto fix required, and additionally installs the mesh-only SOCKS proxy. Has to run locally on the Pi, or at minimum with local network access to it — nothing in this session's environment can reach a home network, so this step is blocked until physically at the house.
+- `add-socks-proxy.sh` — adds the same mesh-only SOCKS proxy to the *existing* NY and Toronto nodes without touching their Headscale routes/ACLs at all. Can run tonight, doesn't depend on the Pi.
+- `mac-client/` — `generate-config.py` (reads the plain-text rule files + three `HOST:PORT` env vars, writes sing-box's `config.json`), the rule files themselves (`rules/usa-domains.txt`, `usa-apps.txt`, `canada-domains.txt`, `canada-apps.txt`, `mfa-home.txt`), and a `README.md` covering install/run/verify. **`mfa-home.txt` ships empty on purpose** — that list can't be guessed, it needs the actual bank(s)/authenticator app(s) filled in before the MFA rule does anything.
+- `ops/Runbook-Home-Egress-GoLive.md` — step-by-step, in the same style as the Client Tail runbook: what can run tonight (NY/Toronto proxies, Mac client setup) vs. what's blocked until physically at the house (the Pi itself), plus a live-verification checklist (visit a domain in each group, record the actual observed egress IP — same standard as every other proof in this document, not "it worked").
+
+**Honest limits, stated the same way as everything else here:**
+- **Nothing has run against real infrastructure yet.** Configured, not proven — same starting state as every other capability in this project before its first live test.
+- **No per-app routing exists on iOS.** The phone's MFA-from-home need is covered today only by the blunt stopgap of setting the *entire* phone to use the home exit node via the stock Tailscale app — not the 5-group model, which would need a real Network Extension app, not attempted tonight.
+- **DNS-over-HTTPS in some browsers could bypass sniffing** — flagged, not yet tested for.
+- **MFA push notifications that ride Apple's own shared push infrastructure** aren't isolable by this method — only each app's own direct API/sync traffic is.
+- **This is explicitly personal-use scope, not a product feature.** No relying-party trust, no independent third parties, no attestation — the entire design deliberately doesn't touch the identity-attestation problem discussed earlier in the same session, because that problem doesn't have a known solution at this scale. This is the "well-built tool for yourself" piece that survived that conversation, built concretely.
+
+**Same night, run from the Mac: the parts that could run did, and turned up a significant new finding that blocks the rest.**
+
+Two real bugs hit and fixed while executing the design above, both worth remembering:
+- **`add-socks-proxy.sh` had the identical bash bug found earlier tonight in `setup-exit-node.sh`**: an apostrophe inside a `${VAR:?message}` parameter expansion breaks bash's parser even inside double quotes ("the node's mesh IP" this time). This is now a confirmed *pattern*, not a one-off — worth grepping for in any future script before it ships, not just fixing reactively.
+- **`generate-config.py` targeted a deprecated sing-box config schema.** sing-box 1.13.16 (the current release, installed fresh tonight) rejected the generated config outright: `sniff: true` as a direct inbound field was removed in 1.11.0 in favor of an explicit route rule action. Fixed by moving it to `{"action": "sniff"}` as the first rule, ahead of the domain-matching rules (which depend on sniffing having already run to know each connection's domain at all). Confirmed clean afterward with `sing-box check`, not just "it wrote a file."
+
+**What actually got proven tonight:**
+- `add-socks-proxy.sh` ran successfully against both Toronto and NY. Both show `atlas-mesh-socks.service` active, and independently confirmed via `ss -tlnp` on Toronto: genuinely listening on `100.64.0.6:1080`, bound to the mesh interface only, UFW inactive.
+- `sing-box` installed (via direct GitHub binary, not Homebrew — brew's own install failed on an unrelated pre-existing permissions problem in `/usr/local/share/man/man8` needing `sudo chown`, not attempted since no sudo password was available unattended).
+- `config.json` generated with real NY/Toronto mesh endpoints and a placeholder home value (Pi isn't built yet), and validates cleanly.
+
+**The real blocker, more significant than anything else tonight: this Mac cannot complete a real TCP connection to *any* mesh peer, on *any* port, right now — while `tailscale ping` to the same peers succeeds.** Confirmed methodically, not assumed:
+- `curl`/`nc` to both SOCKS proxies (Toronto `100.64.0.6:1080`, NY `100.64.0.8:1080`) timed out completely, despite both services being confirmed correctly listening on the far end.
+- Ruled out "just port 1080": the same Mac also can't reach NY's mesh IP on port 80 (Caddy, definitely listening — confirmed reachable on NY's *public* IP in the same test) or port 22.
+- `tailscale ping` to the same mesh IPs succeeds cleanly and quickly (7–28ms) throughout.
+
+**This reframes earlier tonight's "Mac can't consume an exit node" bug as probably a narrower symptom of a bigger problem, not a separate, exit-node-specific issue.** Every mesh-IP SSH timeout logged all session (to Toronto, London, NY, from this Mac) was very likely this same root cause the whole time, not each destination node having its own problem. The pattern in both cases is identical: Tailscale's own control-plane/echo layer works, real data-plane traffic over the tunnel from this Mac does not. Whatever's actually wrong appears to live in this Mac's own Tailscale/network stack, not in Headscale, the ACL, or any individual node — all of which have been independently confirmed correct multiple times tonight.
+
+**Practical effect: the home-egress SOCKS/sing-box design is fully built and schema-valid, but not usable from this Mac until that connectivity bug is understood.** Running `sing-box run` itself also needs `sudo`, which wasn't attempted unattended — so this was never going to reach a live end-to-end test tonight regardless. `rules/mfa-home.txt` also still needs real bank/authenticator domains filled in by hand before the MFA group does anything — nobody can guess that list.
+
+**Ruled out, without sudo, as possible local causes on the Mac itself** (so the next session doesn't re-check these): macOS's own Application Firewall is disabled, not blocking anything. No interfering VPN/proxy software is actually active — `scutil --nc list` shows several *other* configured VPN profiles (NordVPN, a few WireGuard configs, some L2TP entries) but all show `Disconnected`, only Tailscale shows `Connected`, and the routing table has no stale routes or lingering interfaces from any of them. No system-wide SOCKS/HTTP proxy is configured on any network service. `tailscaled`'s own logs aren't readable through `log show` without elevated permissions — came back empty rather than erroring, so that path needs a session with sudo, not more unattended digging.
+
+**What this needs next, and why it's genuinely blocked until then:** either `sudo tcpdump` on this Mac's own `utun12` interface during a live attempt (to see whether outbound SYNs even leave the interface, mirroring the packet-capture method that diagnosed London/Toronto earlier), or a full `sudo tailscale down && tailscale up`, or simply trying this same test from a different network/location to rule out something specific to the current home network. All three need either a sudo password or physical presence — genuinely not resolvable unattended, not from lack of trying.
 
 ---
 
@@ -36,7 +91,11 @@
 - **Nothing here verifies the device actually selected the exit node.** The desktop command includes `--exit-node=`, and the Lens reports whether the egress is healthy — but confirming real traffic is leaving via that egress still needs the existing exit-node test panel. The client tail issues the instruction; it does not yet prove compliance.
 - **Not deployed as of this writing.** `deploy-enrollment.sh` is written, syntax-checked, and does backup → copy → rebuild → health-check → automatic rollback, but has not been run.
 
-**Flagged, not fixed — `db.py` password hashing is weak.** `hash_password()` is a single round of unsalted-construction SHA-256 (`sha256(salt + password)`). It is fast by design, which is exactly wrong for password storage — a commodity GPU tries billions of these per second. For a solo demo with test accounts this is not urgent; before any real person creates an account it should move to `bcrypt`, `scrypt`, or `argon2id`. Logged here rather than changed, since it touches existing working auth and wasn't in scope tonight.
+**Fixed, night of Aug 5–6 — `db.py` password hashing was weak, now uses bcrypt.** `hash_password()` was a single round of unsalted-construction SHA-256 (`sha256(salt + password)`) — fast by design, which is exactly wrong for password storage; a commodity GPU tries billions of these per second. Replaced with `bcrypt`, with a **lazy migration** for every account created before this fix (`personal`, `presence-user-1`, `presence-user-2`, tonight's `golive-test`, etc.): `verify_login()` detects a legacy hash by shape (a bare 64-char hex digest — bcrypt hashes always start with `$2` and can't collide with that), checks it the old way, and if the password is correct, re-hashes it with bcrypt on the spot before returning. No forced reset, no downtime, nobody notices except that their account is now stored properly the next time they log in. A wrong password on a legacy account is rejected without ever touching the stored hash — verified directly, not assumed: 8 test cases covering new-account bcrypt, correct/incorrect logins on both schemes, the upgrade actually happening on success, and explicitly *not* happening on failure, all passed against a throwaway database before this was called done. `requirements.txt` gained `bcrypt==5.0.0` (version confirmed to actually exist on PyPI before pinning it, not guessed).
+
+**Deployed and confirmed live, same night — not just staged.** `deploy-enrollment.sh`'s own preflight caught a real bug this introduced: its `FILES` array was used both for `scp` and for `python3 -m py_compile`, so adding `requirements.txt` (needed to actually ship the new `bcrypt` dependency) made it try to Python-syntax-check a plain requirements file. Fixed by splitting into `PY_FILES` (compiled) and `FILES` (copied, `PY_FILES` plus non-Python files). Deploy then succeeded clean — health check passed, routes still correctly guarded. Verified directly against the live database afterward, not just "it returned 200": a fresh signup got a `$2b$...` hash immediately, and logging into `golive-test@rpnwireless.com` (created earlier the same night, before this fix existed, so genuinely on the old scheme) succeeded and its stored hash was confirmed upgraded to `$2b$...` in place, live, on the production `atlas.db` — the lazy-migration path proven on a real pre-existing account, not just the throwaway test database.
+
+**Also done the same night: the `employment` and `pseudonymous` contexts finally got the `autogroup:internet:*` rule `personal` has had since Aug 3.** This was a named, cheap-to-defuse landmine on the Part 4 roadmap — without it, either context would silently drop internet-bound traffic through an exit node exactly the way Toronto→London did before that original fix, for the same reason (permission never granted, not a networking fault). Same safe procedure as every other ACL change tonight: backed up `acl.hujson`, validated with `headscale configtest` (exit 0) before touching anything live, restarted Headscale, confirmed the mesh came back up healthy. `group:employment-other-person-test` was deliberately left untouched — it wasn't named in the roadmap item and extending scope to it wasn't asked for.
 
 ---
 
@@ -322,13 +381,13 @@ The home-based-remote-access variant appears categorically different — the dev
 ## Part 4 — Suggested Order, Next Time
 
 0. **Deploy and live-test both builds** (`./deploy-enrollment.sh`, then: enroll one real Mac, enroll one real phone by paste, and switch declared origin Toronto↔London on a live device and confirm the egress IP actually changes). Everything below is more valuable once this is proven on hardware rather than against a stub.
-1. **Add `autogroup:internet:*` for `employment` and `pseudonymous`.** Only `personal` got it in the Aug 3 fix. Those contexts will silently drop traffic exactly the way Toronto→London did — a known landmine, cheap to defuse.
+1. ~~Add `autogroup:internet:*` for `employment` and `pseudonymous`~~ — **done, night of Aug 5–6.** Only `personal` had it since the Aug 3 fix; those two contexts would have silently dropped traffic the exact way Toronto→London did before that fix. Backed up `acl.hujson` first, validated with `headscale configtest` (exit 0) before restarting, restarted Headscale, confirmed the mesh came back up healthy afterward. `group:employment-other-person-test` deliberately left as-is — it wasn't part of this ask, and touching it wasn't in scope.
 2. **Solve independent relying-party trust** — how a real, outside service could trust an Atlas Presence without a hand-configured shared secret. This is now the single most important open question in the whole project.
 3. **Make contexts real** — Q4 is still cosmetic; every signup lands in `group:personal` regardless of answer. Per-signup ACL group generation is the multi-tenancy gap.
 4. OIDC provider decisions — cheap to decide, unlocks admin-free onboarding.
 5. ~~The desktop zero-touch script~~ — **done, Aug 5.** `build_enrollment_instructions()` emits the wrapped `--authkey` one-liner Part 2 designed but never built. Still needs a real-hardware run.
 6. ~~Route Path Selection~~ — **done, Aug 5.** See Part 0.2. Still needs a real-hardware run.
-7. Password hashing upgrade in `db.py` (see Part 0.1) — before any real person signs up.
+7. ~~Password hashing upgrade in `db.py`~~ — **done AND deployed, night of Aug 5–6.** Bcrypt with lazy migration for existing accounts, see Part 0.1. Live on the production server, verified against the real database — not just staged.
 8. **Compliance verification** — the client tail issues `--exit-node=` and records intent, but nothing confirms traffic actually left that way. Wiring the existing exit-node test panel to a client-initiated check would close the loop between declared and actual.
 9. Outreach — you now have three rounds of real, tested proof, not just documents.
 

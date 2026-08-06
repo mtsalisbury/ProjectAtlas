@@ -1,0 +1,5 @@
+# Canada domains -> exit via Toronto
+# One domain per line. Matches this domain and all its subdomains.
+
+walmart.ca
+cbc.ca

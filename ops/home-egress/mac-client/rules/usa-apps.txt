@@ -1,0 +1,16 @@
+# USA apps -> exit via NY
+# "App" rules are still matched by the domains that app's traffic talks to —
+# there's no way to see which literal process opened a connection on macOS
+# without a much heavier kernel-level tool, so this list is really "known
+# domains used by this app," same mechanism as usa-domains.txt, just kept
+# separate so it's easy to see what's an app vs. a plain website.
+#
+# TikTok, seeded from tonight's example. This list is not exhaustive —
+# TikTok uses many CDN domains and some may be missing. Add more here as
+# you notice traffic that should have matched but didn't.
+
+tiktok.com
+tiktokv.com
+tiktokcdn.com
+ttlivecdn.com
+musical.ly
